@@ -129,16 +129,19 @@ The first run downloads ForgeGradle, the MCP mappings and the Forge userdev arti
 
 `gradlew build` needs the Forge/MCP artifacts from the internet. Where that is not available,
 `dev-verify/verify.sh` compiles the mod against compile-time stand-ins for Minecraft and Forge
-and then runs a harness that boots the real mod classes and drives them (commands, events,
-ticks, timers, sandbox, path traversal, bundled examples):
+and then runs a harness that boots the real mod classes and drives them: `/script` subcommands,
+Forge events posted on the real bus, server ticks, timers, the sandbox, path traversal, config
+parsing, permission levels, the console sender, every bundled example, every ```js snippet in
+these docs, and the IDE itself (key presses, clicks, buttons, Ctrl+S, delete confirmation,
+server-thread hand-off):
 
 ```bash
-./dev-verify/verify.sh      # PASSED: 171 FAILED: 0
+./dev-verify/verify.sh      # PASSED: 210 FAILED: 0
 ```
 
-It proves compilation under Java 8 and the behaviour of ScriptCraft's own logic. It is not
-Minecraft and it is not Gradle — in-game behaviour still has to be checked with `runClient`.
-See [dev-verify/README.md](dev-verify/README.md).
+It proves compilation under Java 8 with `-Xlint:all` and the behaviour of ScriptCraft's own
+logic. It is not Minecraft and it is not Gradle — in-game behaviour still has to be checked
+with `runClient`. See [dev-verify/README.md](dev-verify/README.md).
 
 ## Project layout
 

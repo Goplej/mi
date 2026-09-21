@@ -3,10 +3,14 @@
 package org.lwjgl.input;
 
 public final class Mouse {
+    public static int wheel;
+
     private Mouse() {
     }
 
     public static int getEventDWheel() {
-        return 0;
+        int value = wheel;
+        wheel = 0;
+        return value;
     }
 }

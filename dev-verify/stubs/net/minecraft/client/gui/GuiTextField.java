@@ -4,6 +4,10 @@ package net.minecraft.client.gui;
 
 public class GuiTextField {
     private final int id;
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
     private String text = "";
     private int cursorPosition;
     private boolean focused;
@@ -12,6 +16,10 @@ public class GuiTextField {
 
     public GuiTextField(int componentId, FontRenderer fontrendererObj, int x, int y, int par5Width, int par6Height) {
         this.id = componentId;
+        this.x = x;
+        this.y = y;
+        this.width = par5Width;
+        this.height = par6Height;
     }
 
     public void setText(String textIn) { this.text = textIn == null ? "" : textIn; this.cursorPosition = text.length(); }
@@ -42,5 +50,13 @@ public class GuiTextField {
         return false;
     }
 
-    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) { return visible && focused; }
+    public boolean mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        boolean inside = visible && mouseButton == 0
+                && mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+        focused = inside;
+        if (inside) {
+            cursorPosition = Math.min(text.length(), Math.max(0, (mouseX - x) / 6));
+        }
+        return inside;
+    }
 }

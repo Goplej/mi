@@ -12,6 +12,9 @@ import com.scriptcraft.server.CommonProxy;
 import com.scriptcraft.util.ConsoleBuffer;
 import com.scriptcraft.util.TextEditor;
 import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
@@ -36,6 +39,8 @@ import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.relauncher.Side;
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -78,7 +83,9 @@ public final class Harness {
         worldApiChecks();
         editorChecks();
         bundledExampleChecks();
+        ideChecks();
         documentationSnippetChecks();
+        configurationChecks();
         shutdownChecks();
 
         System.out.println();
@@ -542,7 +549,142 @@ public final class Harness {
         return greeted;
     }
 
-    /**
+    /** Drives the real in-game IDE: buttons, keys, clicks, and the server-thread hand-off. */
+    private static void ideChecks() throws Exception {
+        section("in-game IDE");
+        Minecraft.getMinecraft().player = null;
+        server.setOnServerThread(true);
+
+        IdeProbe ide = new IdeProbe();
+        ide.initGui();
+        check("IDE builds its buttons", ide.buttons().size() == 9);
+        check("Files tab is the default and marked active", "> Files".equals(ide.button(1).displayString));
+        check("Run/Stop/Save/Reload exist", ide.button(10) != null && ide.button(11) != null
+                && ide.button(12) != null && ide.button(13) != null);
+
+        int drawCalls = Gui.drawCalls;
+        ide.drawScreen(0, 0, 0f);
+        check("Files tab renders", Gui.drawCalls > drawCalls);
+
+        // --- create files through the UI: click the name field, type, press New
+        ide.clickAt(40, 415, 0);
+        type(ide, "ide_ui.js");
+        ide.click(ide.button(20));
+        check("New created the file on disk", new File(ScriptDirectories.scripts(), "ide_ui.js").isFile());
+
+        ide.clickAt(40, 415, 0);
+        type(ide, "noextension");
+        ide.click(ide.button(20));
+        check("New appends .js", new File(ScriptDirectories.scripts(), "noextension.js").isFile());
+
+        ide.clickAt(40, 415, 0);
+        type(ide, "../../evil.js");
+        ide.click(ide.button(20));
+        check("New refuses to escape the scripts folder",
+                !new File(ScriptDirectories.scripts().getParentFile().getParentFile(), "evil.js").exists());
+
+        // --- open a file from the list: the first click selects, the second opens
+        ide.click(ide.button(1));
+        ide.drawScreen(0, 0, 0f);
+        int row = rowOf("ide_ui.js");
+        ide.clickAt(100, 70 + 11 * row, 0);
+        check("a single click only selects", "> Files".equals(ide.button(1).displayString));
+        ide.clickAt(100, 70 + 11 * row, 0);
+        check("opening a file switches to the editor", "> Editor".equals(ide.button(2).displayString));
+
+        // --- type and save with Ctrl+S
+        type(ide, "console.log('typed in the IDE');");
+        pressCtrlS(ide);
+        check("Ctrl+S wrote the editor to disk", ScriptFileManager.read("ide_ui.js").contains("typed in the IDE"));
+
+        // --- reopen it, which must pull the text back off disk
+        ide.click(ide.button(1));
+        ide.clickAt(100, 70 + 11 * row, 0);
+        ide.clickAt(100, 70 + 11 * row, 0);
+        type(ide, "// appended");
+        pressCtrlS(ide);
+        String reopened = ScriptFileManager.read("ide_ui.js");
+        check("the editor loaded the file from disk",
+                reopened.contains("typed in the IDE") && reopened.contains("// appended"));
+
+        // --- Run / Stop / Reload run inline while we are on the server thread
+        ide.click(ide.button(10));
+        check("Run started the script", ScriptCraft.engine().isRunning("ide_ui.js"));
+        ide.click(ide.button(11));
+        check("Stop stopped it", !ScriptCraft.engine().isRunning("ide_ui.js"));
+        ide.click(ide.button(13));
+        check("Reload started it again", ScriptCraft.engine().isRunning("ide_ui.js"));
+
+        // --- off the server thread the work is queued instead of run on the render thread
+        server.setOnServerThread(false);
+        int queued = server.scheduledTasks().size();
+        ide.click(ide.button(11));
+        check("off-thread action is queued", server.scheduledTasks().size() == queued + 1);
+        check("off-thread action did not run yet", ScriptCraft.engine().isRunning("ide_ui.js"));
+        for (Runnable task : new ArrayList<Runnable>(server.scheduledTasks())) {
+            task.run();
+        }
+        server.scheduledTasks().clear();
+        check("queued action ran on the server thread", !ScriptCraft.engine().isRunning("ide_ui.js"));
+        server.setOnServerThread(true);
+
+        // --- delete needs a confirmation; a running script is stopped first
+        ide.click(ide.button(13));
+        ide.click(ide.button(1));
+        ide.click(ide.button(21));
+        check("first Delete only asks for confirmation", new File(ScriptDirectories.scripts(), "ide_ui.js").isFile());
+        ide.click(ide.button(21));
+        check("second Delete removes the file", !new File(ScriptDirectories.scripts(), "ide_ui.js").isFile());
+        check("deleting a running script stops it first", !ScriptCraft.engine().isLoaded("ide_ui.js"));
+
+        // --- console tab shows script output
+        ide.click(ide.button(3));
+        check("Console tab is marked active", "> Console".equals(ide.button(3).displayString));
+        drawCalls = Gui.drawCalls;
+        ide.drawScreen(0, 0, 0f);
+        check("Console tab renders", Gui.drawCalls > drawCalls);
+
+        Mouse.wheel = 120;
+        ide.handleMouseInput();
+        check("mouse wheel is handled without error", true);
+
+        // --- Escape with unsaved changes needs two presses
+        ScriptFileManager.write("ide_escape.js", "var a = 1;\n");
+        IdeProbe dirty = new IdeProbe();
+        dirty.initGui();
+        dirty.drawScreen(0, 0, 0f);
+        int escapeRow = rowOf("ide_escape.js");
+        dirty.clickAt(100, 70 + 11 * escapeRow, 0);
+        dirty.clickAt(100, 70 + 11 * escapeRow, 0);
+        Minecraft.getMinecraft().displayGuiScreen(dirty);
+        dirty.press('x', 0);
+        dirty.press('\0', Keyboard.KEY_ESCAPE);
+        check("Escape with unsaved changes does not close at once", Minecraft.getMinecraft().currentScreen == dirty);
+        dirty.press('\0', Keyboard.KEY_ESCAPE);
+        check("second Escape closes", Minecraft.getMinecraft().currentScreen == null);
+
+        ScriptFileManager.delete("ide_escape.js");
+        ScriptFileManager.delete("noextension.js");
+    }
+
+    /** The IDE lists exactly what listScripts() returns, in the same order, 11 px per row. */
+    private static int rowOf(String name) {
+        return ScriptFileManager.listScripts().indexOf(name);
+    }
+
+    private static void pressCtrlS(IdeProbe ide) throws Exception {
+        GuiScreen.ctrlDown = true;
+        ide.press('s', Keyboard.KEY_S);
+        GuiScreen.ctrlDown = false;
+    }
+
+    private static void type(IdeProbe ide, String text) throws Exception {
+        for (char c : text.toCharArray()) {
+            ide.press(c, 0);
+        }
+    }
+
+/**
      * Every ```js block in the documentation is written to a script and executed, so the README
      * and docs cannot drift away from the API that actually exists.
      */
@@ -602,6 +744,96 @@ public final class Harness {
             reader.close();
         }
         return snippets;
+    }
+
+    /** Config parsing, the timer limit, running from the server console, and autoloading. */
+    private static void configurationChecks() throws Exception {
+        section("config and server side");
+
+        File limits = new File(ScriptDirectories.config(), "harness-limits.properties");
+        writeText(limits, "timer.maxPerScript=2\ntick.maxMillisPerTick=3\ncommand.permissionLevel=4\n");
+        ScriptCraftConfig.load(limits);
+        check("timer.maxPerScript is read from the file", ScriptCraftConfig.maxTimersPerScript == 2);
+        check("tick.maxMillisPerTick is read from the file", ScriptCraftConfig.maxTickMillisPerTick == 3L);
+        check("command.permissionLevel is read from the file", ScriptCraftConfig.commandPermissionLevel == 4);
+
+        File broken = new File(ScriptDirectories.config(), "harness-broken.properties");
+        writeText(broken, "timer.maxPerScript=not-a-number\n");
+        ScriptCraftConfig.load(broken);
+        check("a non-numeric value keeps the previous one", ScriptCraftConfig.maxTimersPerScript == 2);
+
+        // --- the per-script timer limit really is enforced
+        write("harness_limit.js",
+                  "var first = timer.after(60000, function () { });\n"
+                + "var second = timer.after(60000, function () { });\n"
+                + "var third = timer.after(60000, function () { });\n"
+                + "var ids = first + ',' + second + ',' + third;\n");
+        run("/script run harness_limit.js");
+        check("the third timer is refused", evalString("harness_limit.js", "ids").endsWith(",-1"));
+        check("only two timers were created",
+                ScriptCraft.timers().countFor(ScriptCraft.engine().get("harness_limit.js")) == 2);
+        run("/script stop harness_limit.js");
+
+        // --- permission levels
+        server.setDedicated(true);
+        player.setPermissionLevel(0);
+        check("a dedicated server denies a player who is not op", !command.checkPermission(server, player));
+        player.setPermissionLevel(4);
+        check("a dedicated server allows an op", command.checkPermission(server, player));
+        player.setPermissionLevel(0);
+        server.setDedicated(false);
+        check("the local player is always allowed on an integrated server",
+                command.checkPermission(server, player));
+        player.setPermissionLevel(4);
+
+        // --- running from the server console: no player, world falls back to the overworld
+        write("harness_console.js",
+                "var report = player.isValid() + '|' + player.getName() + '|' + world.getName();\n");
+        command.execute(server, server, new String[]{"run", "harness_console.js"});
+        check("a console-started script runs", ScriptCraft.engine().isRunning("harness_console.js"));
+        check("the player API degrades without a player",
+                evalString("harness_console.js", "report").startsWith("false|"));
+        check("world falls back to the server world",
+                evalString("harness_console.js", "report").endsWith("|world"));
+        run("/script stop harness_console.js");
+
+        // --- autoload
+        ScriptCraftConfig.autoLoadOnServerStart = true;
+        write("autoload_me.js", "console.log('autoloaded');\n");
+        mod.serverStarting(new FMLServerStartingEvent(server));
+        check("scripts auto-load on server start", ScriptCraft.engine().isRunning("autoload_me.js"));
+        check("an autoloaded script logged", contains(ConsoleBuffer.snapshot(), "[ScriptCraft:autoload_me.js] autoloaded"));
+        ScriptCraftConfig.autoLoadOnServerStart = false;
+
+        // put the real config back for anything that runs afterwards
+        ScriptCraftConfig.load(ScriptDirectories.configFile());
+        limits.delete();
+        broken.delete();
+    }
+
+    private static void writeText(File file, String text) throws Exception {
+        java.io.OutputStream out = new java.io.FileOutputStream(file);
+        try {
+            out.write(text.getBytes("UTF-8"));
+        } finally {
+            out.close();
+        }
+    }
+
+    /** A command sender that is not a player, with a controllable permission level. */
+    private static final class FakeSender implements ICommandSender {
+        private final int level;
+
+        FakeSender(int level) {
+            this.level = level;
+        }
+
+        public String getName() { return "FakeConsole"; }
+        public boolean canUseCommand(int permLevel, String commandName) { return level >= permLevel; }
+        public World getEntityWorld() { return server.getEntityWorld(); }
+        public MinecraftServer getServer() { return server; }
+        public BlockPos getPosition() { return new BlockPos(0, 0, 0); }
+        public void sendMessage(net.minecraft.util.text.ITextComponent component) { }
     }
 
     private static void shutdownChecks() throws Exception {

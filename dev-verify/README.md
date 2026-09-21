@@ -7,7 +7,8 @@ build environment. This directory gives an answer that does not depend on that n
 | Path | What it is |
 | --- | --- |
 | `stubs/` | Compile-time stand-ins for the Minecraft and Forge classes ScriptCraft uses. Every signature was copied from the decompiled 1.12.2 sources / Forge 1.12.x sources, but the bodies are fakes. |
-| `harness/Harness.java` | Boots the real mod classes and drives them: `/script` subcommands, Forge events posted on the real bus, server ticks, timers, the sandbox, path traversal, the editor model. |
+| `harness/Harness.java` | Boots the real mod classes and drives them: `/script` subcommands, Forge events posted on the real bus, server ticks, timers, the sandbox, path traversal, config parsing, permission levels, the console sender, the bundled examples and every ```js snippet in the docs. |
+| `harness/IdeProbe.java` | Subclasses `GuiScriptIde` to expose the protected `GuiScreen` hooks, so the IDE is driven by real key presses, mouse clicks and button presses. |
 | `verify.sh` | Runs the whole thing and reports a pass/fail count. |
 
 ```
@@ -21,7 +22,8 @@ The harness runs the **real** JavaScript engine (Nashorn from the JDK 8 JRE) and
 
 * Proves: the mod compiles under Java 8 with `-Xlint:all`; script loading, running,
   stopping, reloading, error reporting, timers, event dispatch, the sandbox, the traversal
-  guard and the editor model behave as designed; every bundled example runs.
+  guard, the editor model and the IDE behave as designed; every bundled example and every
+  documentation snippet runs.
 * Does **not** prove: that it runs inside Minecraft. The stubs are not Minecraft, no chunk
   is ever generated, no packet is sent. In-game behaviour still has to be checked by
   running `gradlew runClient` / `runServer` and typing the commands.

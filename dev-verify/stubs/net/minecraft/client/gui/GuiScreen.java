@@ -27,6 +27,9 @@ public class GuiScreen extends Gui {
     protected void keyTyped(char typedChar, int keyCode) throws IOException { }
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException { }
     protected void actionPerformed(GuiButton button) throws IOException { }
-    public static boolean isCtrlKeyDown() { return false; }
-    public static boolean isShiftKeyDown() { return false; }
+    public static boolean ctrlDown;
+    public static boolean shiftDown;
+
+    public static boolean isCtrlKeyDown() { return ctrlDown; }
+    public static boolean isShiftKeyDown() { return shiftDown; }
 }

@@ -45,7 +45,12 @@ public class Entity implements ICommandSender {
     public void setPositionAndUpdate(double x, double y, double z) { setPosition(x, y, z); }
 
     // ICommandSender (Entity implements it in 1.12.2)
-    public boolean canUseCommand(int permLevel, String commandName) { return true; }
+    private int permissionLevel = 4;
+
+    public boolean canUseCommand(int permLevel, String commandName) { return permissionLevel >= permLevel; }
+
+    // harness helper
+    public void setPermissionLevel(int level) { this.permissionLevel = level; }
     public MinecraftServer getServer() { return null; }
     public void sendMessage(ITextComponent component) { sendStatusMessage(component, false); }
     public void sendStatusMessage(ITextComponent chatComponent, boolean actionBar) { }

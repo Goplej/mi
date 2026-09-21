@@ -36,21 +36,22 @@ fi
 rm -rf "$out"
 mkdir -p "$out/stubs" "$out/classes" "$out/harness"
 
-echo "== 1/5 compiling the Minecraft/Forge stand-ins"
+echo "== 1/6 compiling the Minecraft/Forge stand-ins"
 find "$here/stubs" -name '*.java' > "$out/stubs.txt"
 "$jdk/bin/javac" -nowarn -encoding UTF-8 -d "$out/stubs" "@$out/stubs.txt"
 
-echo "== 2/5 compiling the mod ($(find "$root/src/main/java" -name '*.java' | wc -l | tr -d ' ') sources)"
+echo "== 2/6 compiling the mod ($(find "$root/src/main/java" -name '*.java' | wc -l | tr -d ' ') sources)"
 find "$root/src/main/java" -name '*.java' > "$out/src.txt"
 "$jdk/bin/javac" -Xlint:all -encoding UTF-8 -source 8 -target 8 \
     -cp "$out/stubs" -d "$out/classes" "@$out/src.txt"
 
-echo "== 3/5 running the harness"
+echo "== 3/6 running the harness"
+find "$here/harness" -name '*.java' > "$out/harness.txt"
 "$jdk/bin/javac" -nowarn -encoding UTF-8 \
-    -cp "$out/stubs:$out/classes" -d "$out/harness" "$here/harness/Harness.java"
+    -cp "$out/stubs:$out/classes" -d "$out/harness" "@$out/harness.txt"
 (cd "$root" && "$jdk/bin/java" -cp "$out/stubs:$out/classes:$out/harness:src/main/resources" harness.Harness)
 
-echo "== 4/5 client/server split"
+echo "== 4/6 client/server split"
 # @SideOnly(CLIENT) classes must not be reachable from server-side code, so only
 # com.scriptcraft.client may import net.minecraft.client or com.scriptcraft.client.
 leaks=$(grep -rl "^import \(net\.minecraft\.client\|com\.scriptcraft\.client\)" "$root/src/main/java" \
@@ -62,7 +63,24 @@ if [ -n "$leaks" ]; then
 fi
 echo "   ok  no client-only class is imported outside com.scriptcraft.client"
 
-echo "== 5/5 packing the verification jar"
+echo "== 5/6 mcmod.info"
+# A malformed mcmod.info makes Forge log an error at load, and the placeholders have to match
+# the expand map in build.gradle.
+python3 - "$root" <<'PY'
+import json, re, sys
+root = sys.argv[1]
+raw = open(root + "/src/main/resources/mcmod.info").read()
+expanded = re.sub(r"\$\{mcversion\}", "1.12.2", re.sub(r"\$\{version\}", "0.1.0", raw))
+data = json.loads(expanded)
+assert data[0]["modid"] == "scriptcraft", data[0]["modid"]
+assert data[0]["version"] == "0.1.0", data[0]["version"]
+assert data[0]["mcversion"] == "1.12.2", data[0]["mcversion"]
+assert "${" not in expanded, "unexpanded placeholder left in mcmod.info"
+print("   ok  mcmod.info parses; modid=%s version=%s mcversion=%s"
+      % (data[0]["modid"], data[0]["version"], data[0]["mcversion"]))
+PY
+
+echo "== 6/6 packing the verification jar"
 cp -r "$root/src/main/resources/." "$out/classes/"
 "$jdk/bin/jar" cf "$out/scriptcraft-verify.jar" -C "$out/classes" .
 echo "   $(unzip -l "$out/scriptcraft-verify.jar" 2>/dev/null | tail -1 | awk '{print $2}') entries -> $out/scriptcraft-verify.jar"
