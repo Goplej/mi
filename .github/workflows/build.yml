@@ -44,7 +44,7 @@ jobs:
         run: ls -l build/libs || true
 
       # The Actions artifact download goes through a host that is not reachable from every
-      # environment, so the jar is also committed to dist/ and can be picked up with a pull.
+      # environment, so the jar is also committed to release/ and can be picked up with a pull.
       - name: Publish the jar
         if: steps.build.outcome == 'success'
         run: |
@@ -52,15 +52,15 @@ jobs:
           # content (entry names and CRCs) instead of the file bytes.
           fingerprint() { unzip -v "$1" | awk 'NR>3 {print $7, $8}' | sort; }
 
-          mkdir -p dist
+          mkdir -p release
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
           changed=0
           for built in build/libs/ScriptCraft-*.jar; do
             name=$(basename "$built")
-            if git cat-file -e "HEAD:dist/$name" 2>/dev/null; then
-              git show "HEAD:dist/$name" > /tmp/previous.jar
+            if git cat-file -e "HEAD:release/$name" 2>/dev/null; then
+              git show "HEAD:release/$name" > /tmp/previous.jar
               if [ "$(fingerprint "$built")" != "$(fingerprint /tmp/previous.jar)" ]; then
                 echo "$name changed"
                 changed=1
@@ -69,20 +69,20 @@ jobs:
               echo "$name is new"
               changed=1
             fi
-            cp "$built" "dist/$name"
+            cp "$built" "release/$name"
           done
 
           if [ "$changed" = 0 ]; then
-            echo "dist/ content is unchanged; nothing to publish"
+            echo "release/ content is unchanged; nothing to publish"
             exit 0
           fi
 
-          git add -f dist
+          git add -f release
           git commit -m 'ci: built jar [skip ci]'
           git push origin HEAD:${GITHUB_REF_NAME} || true
 
       # Same JDK 8 and the same Nashorn the mod uses at runtime; runs after the jar
-      # publication so a rig failure still leaves dist/ updated, but still fails the job.
+      # publication so a rig failure still leaves release/ updated, but still fails the job.
       - name: Offline verification rig
         run: |
           set +e

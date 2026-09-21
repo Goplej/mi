@@ -3,7 +3,7 @@
 ## 1. Install
 
 1. Minecraft **1.12.2** with **Forge 14.23.5.2859**.
-2. Copy `ScriptCraft-0.1.0.jar` into the `mods` folder — either the prebuilt one in `dist/` or
+2. Copy `ScriptCraft-0.1.0.jar` into the `mods` folder — either the prebuilt one in `release/` or
    `build/libs/ScriptCraft-0.1.0.jar` from `./gradlew build`. (The build compiles against Forge
    build 14.23.5.2847 because that is the newest 1.12.2 build whose ForgeGradle userdev package
    still exists on Forge's maven; the jar declares `mcversion 1.12.2` and loads on 2859, which is

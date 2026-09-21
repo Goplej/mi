@@ -45,7 +45,7 @@ player.sendMessage("ScriptCraft loaded successfully!");
 ## Installation
 
 1. Install Minecraft 1.12.2 with Forge 14.23.5.2859.
-2. Copy `dist/ScriptCraft-0.1.0.jar` (built by CI, see [Building](#building)) or your own
+2. Copy `release/ScriptCraft-0.1.0.jar` (built by CI, see [Building](#building)) or your own
    `build/libs/ScriptCraft-0.1.0.jar` into your `mods` folder.
 3. Start the game. ScriptCraft creates its folders and logs:
 
@@ -156,8 +156,8 @@ the Forge classes on the compile classpath changes.
 ### Continuous build
 
 `.github/workflows/build.yml` runs `./gradlew build` on JDK 8 for every push, uploads the jar
-as a workflow artifact, and copies it to [`dist/`](dist) so it can be picked up with a plain
-`git pull` — useful when the Actions artifact download is not reachable. `dist/ScriptCraft-0.1.0.jar`
+as a workflow artifact, and copies it to [`release/`](release) so it can be picked up with a plain
+`git pull` — useful when the Actions artifact download is not reachable. `release/ScriptCraft-0.1.0.jar`
 is the jar that pipeline produced.
 
 ### Offline verification
