@@ -1,0 +1,42 @@
+name: build
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: gradlew build (JDK 8)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Toolchain versions
+        run: |
+          java -version
+          ./gradlew --version
+
+      - name: Build
+        run: ./gradlew build --no-daemon --stacktrace --info
+
+      - name: List output
+        if: always()
+        run: ls -l build/libs || true
+
+      - name: Upload jar
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScriptCraft-jar
+          path: build/libs/ScriptCraft-*.jar
+          if-no-files-found: error
