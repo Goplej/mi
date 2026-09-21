@@ -55,7 +55,8 @@ public final class ScriptEngineManager {
             return ScriptResult.fail(e.getMessage());
         }
         if (!file.isFile()) {
-            return ScriptResult.fail("Script not found: " + name);
+            return ScriptResult.fail("Script not found: " + name + " - looked in "
+                    + ScriptFileManager.searchDescription());
         }
 
         String source;

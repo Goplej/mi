@@ -81,6 +81,7 @@ public final class Harness {
         errorHandlingChecks();
         sandboxChecks();
         pathTraversalChecks();
+        scriptLocationChecks();
         worldApiChecks();
         editorChecks();
         bundledExampleChecks();
@@ -428,6 +429,99 @@ public final class Harness {
         check("windows style path rejected", rejected("..\\..\\evil.js"));
         check("plain name accepted", accepted("ok.js"));
         check("nested name accepted", accepted("packs/ok.js"));
+    }
+
+
+    /**
+     * Scripts used to be looked up only in scriptcraft/scripts, which is not where people put
+     * them: a file dropped in .minecraft/scriptcraft next to config/ and logs/ was reported as
+     * "script not found" with no hint. Both folders work now, and the confusing cases say what
+     * happened instead of doing nothing.
+     */
+    private static void scriptLocationChecks() throws Exception {
+        section("script location");
+
+        // --- a script in the scriptcraft folder itself
+        File root = ScriptDirectories.root();
+        File inRoot = new File(root, "harness_root.js");
+        writeText(inRoot, "console.log('from the root folder');\n"
+                        + "player.sendMessage('root script ran');\n");
+        check("the root folder is not the scripts folder", !root.equals(ScriptDirectories.scripts()));
+
+        player.sentMessages().clear();
+        run("/script run harness_root.js");
+        check("a script in scriptcraft/ is found and runs",
+                ScriptCraft.engine().isRunning("harness_root.js"));
+        check("a script in scriptcraft/ gets the player", player.sentMessages().contains("root script ran"));
+        check("a script in scriptcraft/ logs", contains(ConsoleBuffer.snapshot(),
+                "[ScriptCraft:harness_root.js] from the root folder"));
+        check("listScripts() sees the root script",
+                ScriptFileManager.listScripts().contains("harness_root.js"));
+
+        player.sentMessages().clear();
+        run("/script list");
+        check("/script list marks where a root script lives",
+                contains(player.sentMessages(), "[RUNNING] harness_root.js   (scriptcraft/)"));
+
+        player.sentMessages().clear();
+        run("/script info harness_root.js");
+        check("/script info shows the resolved file",
+                contains(player.sentMessages(), "scriptcraft/harness_root.js"));
+
+        player.sentMessages().clear();
+        run("/script stop harness_root.js");
+        check("a root script can be stopped", !ScriptCraft.engine().isRunning("harness_root.js"));
+
+        // --- the same name in both folders: scripts/ wins, and the file is written there
+        write("harness_both.js", "player.sendMessage('from scripts/');\n");
+        writeText(new File(root, "harness_both.js"), "player.sendMessage('from scriptcraft/');\n");
+        player.sentMessages().clear();
+        run("/script run harness_both.js");
+        check("a name in both folders resolves to scriptcraft/scripts/",
+                player.sentMessages().contains("from scripts/"));
+        run("/script stop harness_both.js");
+        new File(root, "harness_both.js").delete();
+
+        // --- a name that exists nowhere says where it looked
+        player.sentMessages().clear();
+        run("/script run harness_typo.js");
+        check("the not-found message names both folders",
+                contains(player.sentMessages(), "scriptcraft/scripts and scriptcraft/"));
+
+        // --- still guarded: the root folder is the limit, not the whole game directory
+        check("a root-level traversal is rejected", rejected("../outside.js"));
+        check("an absolute path is rejected", rejected("/etc/passwd.js"));
+        check("a root-relative subfolder traversal is rejected", rejected("sub/../../outside.js"));
+
+        // --- console start: the script says why player.* did nothing
+        write("harness_noplayer.js", "player.sendMessage('nobody to talk to');\n");
+        int before = ConsoleBuffer.snapshot().size();
+        command.execute(server, server, new String[]{"run", "harness_noplayer.js"});
+        check("a console-started script runs", ScriptCraft.engine().isRunning("harness_noplayer.js"));
+        check("the console is told the script has no player",
+                contains(server.getPlayerList().broadcasts(), "without a player"));
+        String ignored = null;
+        List<String> lines = ConsoleBuffer.snapshot();
+        for (int i = before; i < lines.size(); i++) {
+            if (lines.get(i).contains("was ignored")) {
+                ignored = lines.get(i);
+            }
+        }
+        check("an ignored player call is reported in the log", ignored != null
+                && ignored.contains("player.sendMessage(\"nobody to talk to\")"));
+        run("/script stop harness_noplayer.js");
+
+        // --- cleanup, so the rest of the run sees the same file list as before
+        inRoot.delete();
+        check("the root script file is gone", !inRoot.exists());
+        check("the deleted root script is no longer listed",
+                !ScriptFileManager.listScripts().contains("harness_root.js"));
+        boolean examples = true;
+        for (String example : new String[]{"example.js", "welcome.js", "events.js",
+                                           "timer.js", "blocks.js", "test.js"}) {
+            examples = examples && ScriptFileManager.listScripts().contains(example);
+        }
+        check("the six bundled examples are still listed", examples);
     }
 
     private static void worldApiChecks() throws Exception {

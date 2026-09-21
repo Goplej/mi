@@ -1,5 +1,6 @@
 package com.scriptcraft.api;
 
+import com.scriptcraft.core.ScriptCraftLog;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -13,14 +14,23 @@ import net.minecraft.world.World;
  *
  * <p>When a script is started from the server console there is no player; every method then
  * returns a neutral value and {@link #isValid()} is {@code false}, so scripts can check instead of
- * crashing.
+ * crashing. Calls that would have changed something (sending a message, teleporting, setting
+ * health) say so in the log instead of doing nothing silently - a script that sends chat from the
+ * console used to look like it ran and simply had no effect.
  */
 public final class PlayerApi {
 
     private final EntityPlayer player;
+    private final String scriptName;
+    private boolean warnedUnavailable;
 
     public PlayerApi(EntityPlayer player) {
+        this(player, null);
+    }
+
+    public PlayerApi(EntityPlayer player, String scriptName) {
         this.player = player;
+        this.scriptName = scriptName;
     }
 
     public boolean isValid() {
@@ -32,15 +42,34 @@ public final class PlayerApi {
     }
 
     public void sendMessage(String message) {
-        if (player != null) {
-            player.sendStatusMessage(new TextComponentString(String.valueOf(message)), false);
+        if (player == null) {
+            unavailable("player.sendMessage(\"" + message + "\")");
+            return;
         }
+        player.sendStatusMessage(new TextComponentString(String.valueOf(message)), false);
     }
 
     public void sendActionBar(String message) {
-        if (player != null) {
-            player.sendStatusMessage(new TextComponentString(String.valueOf(message)), true);
+        if (player == null) {
+            unavailable("player.sendActionBar(\"" + message + "\")");
+            return;
         }
+        player.sendStatusMessage(new TextComponentString(String.valueOf(message)), true);
+    }
+
+    /**
+     * Reports the first ignored call of a script that has no player, once per API object so a loop
+     * cannot flood the log.
+     */
+    private void unavailable(String call) {
+        if (warnedUnavailable) {
+            return;
+        }
+        warnedUnavailable = true;
+        String prefix = scriptName == null ? "[ScriptCraft]" : "[ScriptCraft:" + scriptName + "]";
+        ScriptCraftLog.warn(prefix + " " + call + " was ignored: no player - the script was started "
+                + "from the server console. Start it in game (/script run " + (scriptName == null ? "<file>" : scriptName)
+                + " as a player) or query player.isValid() first.");
     }
 
     public double getX() {
@@ -76,9 +105,11 @@ public final class PlayerApi {
     }
 
     public void setHealth(double health) {
-        if (player != null) {
-            player.setHealth((float) health);
+        if (player == null) {
+            unavailable("player.setHealth(" + health + ")");
+            return;
         }
+        player.setHealth((float) health);
     }
 
     public int getFoodLevel() {
@@ -86,9 +117,11 @@ public final class PlayerApi {
     }
 
     public void setFoodLevel(int level) {
-        if (player != null) {
-            player.getFoodStats().setFoodLevel(level);
+        if (player == null) {
+            unavailable("player.setFoodLevel(" + level + ")");
+            return;
         }
+        player.getFoodStats().setFoodLevel(level);
     }
 
     public boolean isSneaking() {
@@ -126,9 +159,11 @@ public final class PlayerApi {
     }
 
     public void teleport(double x, double y, double z) {
-        if (player != null) {
-            player.setPositionAndUpdate(x, y, z);
+        if (player == null) {
+            unavailable("player.teleport(" + x + ", " + y + ", " + z + ")");
+            return;
         }
+        player.setPositionAndUpdate(x, y, z);
     }
 
     /** Gives an item by registry name, e.g. {@code player.giveItem("minecraft:diamond", 5)}. */

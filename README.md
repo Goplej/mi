@@ -2,13 +2,13 @@
 
 JavaScript scripting for **Minecraft 1.12.2 / Forge 14.23.5.2859**.
 
-Drop `.js` files into `.minecraft/scriptcraft/scripts`, then run them from the game with
-`/script run <file>` or from the in-game IDE (key `K`). Scripts get a real JavaScript engine
+Drop `.js` files into `.minecraft/scriptcraft/` (or its `scripts` subfolder), then run them from
+the game with `/script run <file>` or from the in-game IDE (key `K`). Scripts get a real JavaScript engine
 — Nashorn, the one that ships with the Java 8 runtime Minecraft 1.12.2 requires — plus an API
 for the player, the world, blocks, entities, events, timers and the console.
 
 ```js
-// .minecraft/scriptcraft/scripts/example.js
+// .minecraft/scriptcraft/example.js  (or scriptcraft/scripts/example.js)
 console.log("Hello from example.js");
 player.sendMessage("ScriptCraft loaded successfully!");
 ```
@@ -35,8 +35,11 @@ player.sendMessage("ScriptCraft loaded successfully!");
 * **Sandboxed by default.** Java interop is switched off (`--no-java`), the engine binding and
   the scripting globals are removed, and a scoped `SecurityManager` denies process execution
   and JVM shutdown while a script runs.
-* **Path traversal guard.** Every file name is resolved against
-  `.minecraft/scriptcraft/scripts` and rejected if it escapes — no `../`, no absolute paths.
+* **Two script folders.** `.minecraft/scriptcraft/` and `.minecraft/scriptcraft/scripts/` are
+  both searched; a name that exists in both uses the `scripts` copy. New files are created in
+  `scripts/`.
+* **Path traversal guard.** Every file name is resolved against those folders and rejected if it
+  escapes them — no `../`, no absolute paths.
 * **Client/server safe.** `Minecraft.getMinecraft()` is only ever touched from client-only
   classes behind `@SideOnly(Side.CLIENT)`; on a dedicated server the player API degrades
   instead of crashing.
@@ -69,6 +72,7 @@ player.sendMessage("ScriptCraft loaded successfully!");
 
 ```
 .minecraft/scriptcraft/
+├── *.js                        scripts you drop here are found too
 ├── scripts/                    your .js files (the six examples are copied here)
 ├── config/scriptcraft.properties
 └── logs/scriptcraft-YYYY-MM-DD.log
@@ -230,7 +234,7 @@ hand untrusted strangers. What it does, by default:
   script cannot reach the host engine or the JVM;
 * while a script runs, a scoped `SecurityManager` denies process execution and JVM shutdown
   (Minecraft's own IO is untouched);
-* file names may not escape `.minecraft/scriptcraft/scripts`;
+* file names may not escape `.minecraft/scriptcraft/` (or `scripts/` inside it);
 * scripts only run for operators (permission level 2 by default).
 
 Set `sandbox.enabled=false` in `config/scriptcraft.properties` only if you know why.

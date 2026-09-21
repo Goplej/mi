@@ -7,6 +7,7 @@ import com.scriptcraft.engine.ScriptEngineManager;
 import com.scriptcraft.engine.ScriptError;
 import com.scriptcraft.engine.ScriptResult;
 import com.scriptcraft.events.ScriptEventRegistry;
+import com.scriptcraft.filesystem.ScriptDirectories;
 import com.scriptcraft.filesystem.ScriptFileManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -18,6 +19,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -133,12 +135,13 @@ public class ScriptCommand extends CommandBase {
         send(sender, "/script info <file>       - state, timers, listeners, last error");
         send(sender, "/script new <file>        - create an empty script");
         send(sender, "/script ide               - open the in-game IDE (client only)");
-        send(sender, TextFormatting.DARK_GRAY, "Scripts live in .minecraft/scriptcraft/scripts");
+        send(sender, TextFormatting.DARK_GRAY, "Scripts live in .minecraft/scriptcraft/ or in its scripts/ subfolder.");
+        send(sender, TextFormatting.DARK_GRAY, "New scripts are created in scriptcraft/scripts/.");
     }
 
     private void list(ICommandSender sender) {
         List<String> files = ScriptFileManager.listScripts();
-        send(sender, TextFormatting.GOLD, "Scripts (" + files.size() + " in " + "scriptcraft/scripts):");
+        send(sender, TextFormatting.GOLD, "Scripts (" + files.size() + " in scriptcraft/ and scriptcraft/scripts):");
         if (files.isEmpty()) {
             send(sender, TextFormatting.GRAY, "  (no .js files yet - try /script new example.js)");
             return;
@@ -148,13 +151,27 @@ public class ScriptCommand extends CommandBase {
             String state = context == null ? "STOPPED" : context.getState().name();
             TextFormatting color = "RUNNING".equals(state) ? TextFormatting.GREEN
                     : "ERROR".equals(state) ? TextFormatting.RED : TextFormatting.GRAY;
-            send(sender, color, "  [" + state + "] " + file);
+            send(sender, color, "  [" + state + "] " + file + locationSuffix(file));
         }
+    }
+
+    /** Marks scripts that live in the scriptcraft folder itself rather than in scripts/. */
+    private static String locationSuffix(String file) {
+        File resolved = ScriptFileManager.locate(file);
+        if (resolved == null) {
+            return "";
+        }
+        return resolved.getParentFile().equals(ScriptDirectories.scripts()) ? "" : "   (scriptcraft/)";
     }
 
     private void run(ICommandSender sender, String file) {
         ScriptResult result = engine.run(file, owner(sender));
         report(sender, file, result);
+        if (result.isSuccess() && owner(sender) == null) {
+            send(sender, TextFormatting.YELLOW,
+                    "Started without a player: 'player' is not available to this script. "
+                    + "Run it in game for player access, or use server/world/console in it.");
+        }
     }
 
     private void stop(ICommandSender sender, String file) {
@@ -185,6 +202,7 @@ public class ScriptCommand extends CommandBase {
         ScriptContext context = engine.get(file);
         long size = ScriptFileManager.sizeOf(file);
         send(sender, TextFormatting.GOLD, "Script: " + file);
+        send(sender, "  File:    " + ScriptFileManager.describe(ScriptFileManager.locate(file)));
         send(sender, "  On disk: " + (size >= 0 ? size + " bytes" : "missing"));
         if (context == null) {
             send(sender, "  State:   " + TextFormatting.GRAY + "STOPPED (not loaded)");

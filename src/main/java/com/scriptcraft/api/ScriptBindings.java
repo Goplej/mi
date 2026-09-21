@@ -31,7 +31,7 @@ public final class ScriptBindings {
         EntityPlayer player = owner instanceof EntityPlayer ? (EntityPlayer) owner : null;
         WorldApi world = new WorldApi(player);
 
-        engine.put("player", new PlayerApi(player));
+        engine.put("player", new PlayerApi(player, context.getName()));
         engine.put("world", world);
         engine.put("server", new ServerApi(timers));
         engine.put("blocks", new BlocksApi(world));

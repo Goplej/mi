@@ -30,16 +30,19 @@ ScriptCraft creates this on first run and never writes outside it:
 
 ```
 .minecraft/scriptcraft/
-├── scripts/            <- your .js files
+├── scripts/            <- your .js files (new ones are created here)
+├── mytest.js           <- a script here works as well
 ├── config/
 │   └── scriptcraft.properties
 └── logs/
     └── scriptcraft-2026-09-21.log
 ```
 
-Six example scripts are copied into `scripts/` the first time (`example.js`, `welcome.js`,
-`events.js`, `timer.js`, `blocks.js`, `test.js`). They are copied again only if they are
-missing, so your edits are never overwritten.
+Both folders are searched, `scripts/` first: `mytest.js` and `scripts/mytest.js` are both found by
+`/script run mytest.js`. If the same name exists in both, the `scripts/` copy runs — `/script info
+mytest.js` always prints the file that was used. Six example scripts are copied into `scripts/` the
+first time (`example.js`, `welcome.js`, `events.js`, `timer.js`, `blocks.js`, `test.js`). They are
+copied again only if they are missing, so your edits are never overwritten.
 
 ## 3. Your first script
 
@@ -57,7 +60,22 @@ In game:
 ```
 
 You should see the message in chat and the log line in `latest.log` /
-`scriptcraft/logs/`. Now edit the file and run:
+`scriptcraft/logs/`.
+
+`/script run` must be typed by a player in game — that is the player a script gets as `player`
+when it starts. Started from the server console there is no player, and a script that calls
+`player.sendMessage(...)` says so in the console instead of failing silently:
+
+```
+[ScriptCraft/WARN] [ScriptCraft:example.js] player.sendMessage("...") was ignored: no player -
+the script was started from the server console.
+```
+
+If a file is not where the mod looks, the error names both folders:
+
+```
+Script not found: mytest.js - looked in scriptcraft/scripts and scriptcraft/ (inside ...)
+``` Now edit the file and run:
 
 ```
 /script reload example.js

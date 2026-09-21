@@ -15,9 +15,14 @@ import java.util.List;
 /**
  * All file access for scripts goes through this class.
  *
- * <p>Every name is resolved against {@code .minecraft/scriptcraft/scripts} and the resulting
- * canonical path must stay inside that folder, so {@code ../../etc/passwd}, absolute paths and
- * symlink tricks are rejected before any IO happens.
+ * <p>A name is looked up in two places, in this order:
+ * <ol>
+ *   <li>{@code .minecraft/scriptcraft/scripts} — where the mod writes new files, and</li>
+ *   <li>{@code .minecraft/scriptcraft} itself, so a script dropped next to {@code config/} and
+ *       {@code logs/} is found too.</li>
+ * </ol>
+ * Whichever candidate matches, its canonical path must stay inside the {@code scriptcraft} folder,
+ * so {@code ../../etc/passwd}, absolute paths and symlink tricks are rejected before any IO happens.
  */
 public final class ScriptFileManager {
 
@@ -31,9 +36,12 @@ public final class ScriptFileManager {
     }
 
     /**
-     * Resolves a user supplied name to a file inside the scripts folder.
+     * Resolves a user supplied name to the script file to use.
      *
-     * @throws IOException if the name is empty, not a {@code .js} file or escapes the folder
+     * <p>Existing files win ({@code scripts/} before {@code scriptcraft/}); when neither exists the
+     * returned path is the one a new file would be created at, which is {@code scripts/}.
+     *
+     * @throws IOException if the name is empty, not a {@code .js} file or escapes the folders
      */
     public static File resolve(String fileName) throws IOException {
         if (fileName == null || fileName.trim().isEmpty()) {
@@ -54,12 +62,54 @@ public final class ScriptFileManager {
             throw new IOException("Not a JavaScript file (must end with " + EXTENSION + "): " + fileName);
         }
 
-        File base = ScriptDirectories.scripts().getCanonicalFile();
-        File target = new File(base, name).getCanonicalFile();
-        if (!isInside(base, target)) {
+        File scripts = ScriptDirectories.scripts().getCanonicalFile();
+        File primary = new File(scripts, name).getCanonicalFile();
+        if (!isInside(scripts, primary)) {
             throw new IOException("Path escapes the scripts directory: " + fileName);
         }
-        return target;
+        if (primary.isFile()) {
+            return primary;
+        }
+
+        File root = ScriptDirectories.root().getCanonicalFile();
+        File secondary = new File(root, name).getCanonicalFile();
+        if (!isInside(root, secondary)) {
+            throw new IOException("Path escapes the scripts directory: " + fileName);
+        }
+        if (secondary.isFile()) {
+            return secondary;
+        }
+        return primary;
+    }
+
+    /**
+     * Where script names are looked up, for error messages. Short on purpose: it goes into chat.
+     */
+    public static String searchDescription() {
+        return "scriptcraft/scripts and scriptcraft/ (inside " + ScriptDirectories.root().getParentFile()
+                + ")";
+    }
+
+    /** The file a name resolves to, or null when it does not exist. */
+    public static File locate(String fileName) {
+        try {
+            File file = resolve(fileName);
+            return file.isFile() ? file : null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /** Path of a script relative to the game directory, for {@code /script info}. */
+    public static String describe(File file) {
+        if (file == null) {
+            return "?";
+        }
+        try {
+            return ScriptDirectories.root().getParentFile().toURI().relativize(file.toURI()).getPath();
+        } catch (RuntimeException e) {
+            return file.getAbsolutePath();
+        }
     }
 
     public static boolean exists(String fileName) {
@@ -70,20 +120,28 @@ public final class ScriptFileManager {
         }
     }
 
-    /** Names of all {@code .js} files in the scripts folder, sorted, relative to that folder. */
+    /**
+     * Names of every {@code .js} script, sorted: the {@code scripts} folder first, then the
+     * {@code scriptcraft} folder. A name in both places is listed once and resolves to the
+     * {@code scripts} copy, which is what {@link #resolve(String)} does.
+     */
     public static List<String> listScripts() {
         List<String> names = new ArrayList<String>();
-        File dir = ScriptDirectories.scripts();
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isFile() && isScriptName(file.getName())) {
-                    names.add(file.getName());
-                }
-            }
-        }
+        addScripts(new File(ScriptDirectories.scripts(), "").listFiles(), names);
+        addScripts(ScriptDirectories.root().listFiles(), names);
         Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
         return names;
+    }
+
+    private static void addScripts(File[] files, List<String> names) {
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            if (file.isFile() && isScriptName(file.getName()) && !names.contains(file.getName())) {
+                names.add(file.getName());
+            }
+        }
     }
 
     public static String read(String fileName) throws IOException {

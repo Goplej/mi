@@ -6,7 +6,7 @@ itself is recreated from scratch for the next run.
 
 | Binding | Type | Available |
 | --- | --- | --- |
-| `player` | `PlayerApi` | The player who ran the script. On a dedicated server or when run from the console it exists but `isValid()` is `false` and the getters return safe defaults. |
+| `player` | `PlayerApi` | The player who ran the script (`/script run` must be typed in game for this). Started from the server console it exists but `isValid()` is `false`, getters return safe defaults, and calls that would change something — `sendMessage`, `sendActionBar`, `teleport`, `setHealth`, `setFoodLevel` — are reported in the log as ignored instead of doing nothing quietly. |
 | `world` | `WorldApi` | The world of the owner, or the overworld when run from the console |
 | `blocks` | `BlocksApi` | Shortcuts for block reads/writes in `world` |
 | `entities` | `EntitiesApi` | Entities in `world` |
