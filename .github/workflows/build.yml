@@ -43,7 +43,6 @@ jobs:
 
       - name: Build
         id: build
-        continue-on-error: true
         run: |
           ./gradlew build --no-daemon --stacktrace 2>&1 | tee ci-build.log
           exit ${PIPESTATUS[0]}
@@ -53,14 +52,12 @@ jobs:
         run: ls -l build/libs || true
 
       # Proves the file Gradle produced really is a reobfuscated Forge 1.12.2 mod jar and not
-      # just something that happens to be named ScriptCraft-0.1.0.jar.
-      # Proves the file Gradle produced really is a reobfuscated Forge 1.12.2 mod jar and not
       # just something that happens to be named ScriptCraft-0.1.0.jar. The dumps go to files
       # first: `javap ... | grep -q ...` under `set -o pipefail` can die of SIGPIPE, and javap 8
       # prints annotation values abbreviated (#7=e#8.#9) where javap 11 expands them, so the
       # checks below only look at things both versions print the same way.
       - name: Verify the built jar
-        if: steps.build.outcome == 'success'
+        id: verify
         run: |
           set -uo pipefail
           exec > >(tee -a ci-verify.log) 2>&1
@@ -91,13 +88,15 @@ jobs:
           check 'manifest names the mod'            "grep -q 'Implementation-Title: ScriptCraft' $d/manifest.txt"
           check 'mcmod.info declares mcversion'     "grep -q mcversion $d/mcmod.txt && grep -q 1.12.2 $d/mcmod.txt"
           check 'bundled example is packaged'       "grep -q 'assets/scriptcraft/examples/example.js' $d/list.txt"
-          check 'at least 50 classes'               "[ \$(grep -c '\.class$' $d/list.txt) -ge 50 ]"
+          classes=$(grep -c '\.class$' "$d/list.txt")
+          check 'at least 50 classes'               "[ $classes -ge 50 ]"
           check 'class files are Java 8 (major 52)' "grep -q 'major version: 52' $d/mod.txt"
           check 'links against FML (@Mod)'          "grep -q 'net/minecraftforge/fml/common/Mod' $d/mod.txt"
           check 'client proxy is @SideOnly(CLIENT)' "grep -q SideOnly $d/client.txt && grep -q CLIENT $d/client.txt"
           check 'reobfuscated (SRG names present)'  "grep -qE 'func_[0-9a-z]+' $d/player.txt"
+          check 'the two-script-folder fix is in'   "unzip -p $jar com/scriptcraft/filesystem/ScriptFileManager.class | grep -q 'scriptcraft/scripts and scriptcraft'"
 
-          echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $(grep -c '\.class$' "$d/list.txt") classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
+          echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $classes classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
 
           if [ "$failures" != 0 ]; then
             echo "$failures check(s) failed; dumps follow"
@@ -112,7 +111,7 @@ jobs:
       # The Actions artifact download goes through a host that is not reachable from every
       # environment, so the jar is also committed to release/ and can be picked up with a pull.
       - name: Publish the jar
-        if: steps.build.outcome == 'success' && github.ref_type == 'branch'
+        if: github.ref_type == 'branch'
         run: |
           # Both tracked copies are kept in sync: build/libs (where gradlew writes) and release/
           # (which survives gradlew clean). reobfJar stamps entries with the build time, so the
@@ -156,10 +155,9 @@ jobs:
             exit 0
           fi
           git commit -m 'ci: built jar [skip ci]'
-          git push origin HEAD:${GITHUB_REF_NAME} || true
+          git push origin HEAD:refs/heads/${GITHUB_REF_NAME} || true
 
-      # Same JDK 8 and the same Nashorn the mod uses at runtime; runs after the jar
-      # publication so a rig failure still leaves release/ updated, but still fails the job.
+      # Same JDK 8 and the same Nashorn the mod uses at runtime.
       - name: Offline verification rig
         run: |
           set +e
@@ -170,12 +168,13 @@ jobs:
           exit $status
 
       # The Actions log endpoints are not reachable from every environment either. On failure
-      # the logs are committed back to the branch so they can be read with a normal git pull.
+      # the logs are committed back so they can be read with a normal git pull.
       - name: Publish the build log
-        if: failure() || steps.build.outcome == 'failure'
+        if: failure()
         run: |
           {
-            echo "=== run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT ==="
+            echo "=== run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT on ${GITHUB_REF_NAME} (${GITHUB_REF_TYPE}) ==="
+            echo "build: ${{ steps.build.outcome }}   jar checks: ${{ steps.verify.outcome }}"
             for f in ci-verify.log ci-build.log; do
               echo "--- $f ---"
               if [ -f "$f" ]; then tail -c 40000 "$f"; else echo '(missing)'; fi
@@ -185,14 +184,12 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f ci-last-build.log
           git commit -m 'ci: build log [skip ci]' || true
-          git push origin HEAD:${GITHUB_REF_NAME} || true
-
-      - name: Fail if the build failed
-        if: steps.build.outcome == 'failure'
-        run: exit 1
+          # always onto a branch, never onto the tag that may have triggered this run
+          target="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "branch" ]; then target=arena/01a0c3ee-mi; fi
+          git push origin HEAD:refs/heads/$target || true
 
       - name: Upload jar
-        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v6
         with:
           name: ScriptCraft-jar
@@ -202,9 +199,7 @@ jobs:
       # Release assets are uploaded through uploads.github.com, which some environments cannot
       # reach; this step runs on the runner instead, so the release always gets its assets.
       - name: Publish the release
-        if: |
-          steps.build.outcome == 'success' &&
-          (github.ref_type == 'tag' || github.event.inputs.create_release == 'true')
+        if: github.ref_type == 'tag' || github.event.inputs.create_release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
