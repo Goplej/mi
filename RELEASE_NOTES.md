@@ -25,6 +25,31 @@ examples, 50+ class files, class file major version 52, an `@Mod` link into FML,
 `@SideOnly(Side.CLIENT)` on the client proxy, SRG `func_*` names), and runs the offline
 verification rig (`dev-verify/verify.sh`, currently `PASSED: 211 FAILED: 0`) against a real JDK 8.
 
+## Where scripts live
+
+Both of these work for `/script run`:
+
+* `.minecraft/scriptcraft/` — drop `mytest.js` next to `config/` and `logs/`
+* `.minecraft/scriptcraft/scripts/` — where the six bundled examples are copied, and where
+  `/script new` creates files
+
+If a name exists in both folders the `scripts/` copy runs; `/script info <file>` always prints the
+file that was used. A missing file now says where the mod looked:
+`Script not found: typo.js - looked in scriptcraft/scripts and scriptcraft/ (...)`.
+
+## Started without a player
+
+`/script run` gives the script the player who typed it. Started from the server console there is no
+player, and the calls that would have changed something used to be silently ignored — the script
+reported success and nothing happened. Now the console is told, and the log says which call was
+dropped:
+
+```
+[ScriptCraft/WARN] [ScriptCraft:mytest.js] player.sendMessage("...") was ignored: no player - the
+script was started from the server console. Start it in game (/script run mytest.js as a player)
+or query player.isValid() first.
+```
+
 ## Forge build number
 
 The mod is compiled against Forge **14.23.5.2847**, not 2859: ForgeGradle 2.3 needs the
