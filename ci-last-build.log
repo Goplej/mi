@@ -1,3 +1,171 @@
+=== probe (35602020145 attempt 1) ===
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-userdev.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-userdev.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-universal.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859.jar
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859.pom
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-src.zip
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-userdev.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-userdev.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-universal.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860.jar
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860.pom
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-src.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847-userdev.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847-userdev.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847-universal.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847.jar
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847.pom
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2847/forge-1.12.2-14.23.5.2847-src.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768-userdev.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768-userdev.zip
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768-universal.jar
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768.jar
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768.pom
+404  https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2768/forge-1.12.2-14.23.5.2768-src.zip
+--- directory listing: 1.12.2-14.23.5.2859 ---
+<html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Reposilite - 404 Not Found</title>
+    </head>
+    <style>
+      body {
+        height: calc(100vh - 170px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    
+      .error-view {
+        text-align: center;
+        width: 100vh;
+        height: 100px;
+      }
+    
+      .spooky p {
+        margin-top: 0;
+        margin-bottom: 0;
+        font-size: 1.2rem;
+        font-weight: lighter;
+      }
+      
+      a:link, a:visited {
+        color: rebeccapurple;
+      }
+    </style>
+    <body>
+      <div class='error-view'>
+        <h1 style="font-size: 1.5rem">
+          <span style="color: gray;">404︱</span>Resource not found
+        </h1>
+        <p><i>You need to provide credentials.</i></p>
+        <p>Looking for a dashboard?</p>
+        <div class="spooky">
+          <p>{\__/}</p>
+          <p>(●ᴗ●)</p>
+          <p>( >🥕</p>
+        </div>
+        <p>Visit <a href="/#/releases/net/minecraftforge/forge/1.12.2-14.23.5.2859/" style="color: rebeccapurple; text-decoration: none;">/#/releases/net/minecraftforge/forge/1.12.2-14.23.5.2859/</a></p>
+      </div>
+    </body>
+</html>--- directory listing: 1.12.2-14.23.5.2860 ---
+<html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Reposilite - 404 Not Found</title>
+    </head>
+    <style>
+      body {
+        height: calc(100vh - 170px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    
+      .error-view {
+        text-align: center;
+        width: 100vh;
+        height: 100px;
+      }
+    
+      .spooky p {
+        margin-top: 0;
+        margin-bottom: 0;
+        font-size: 1.2rem;
+        font-weight: lighter;
+      }
+      
+      a:link, a:visited {
+        color: rebeccapurple;
+      }
+    </style>
+    <body>
+      <div class='error-view'>
+        <h1 style="font-size: 1.5rem">
+          <span style="color: gray;">404︱</span>Resource not found
+        </h1>
+        <p><i>You need to provide credentials.</i></p>
+        <p>Looking for a dashboard?</p>
+        <div class="spooky">
+          <p>{\__/}</p>
+          <p>(●ᴗ●)</p>
+          <p>( >🥕</p>
+        </div>
+        <p>Visit <a href="/#/releases/net/minecraftforge/forge/1.12.2-14.23.5.2860/" style="color: rebeccapurple; text-decoration: none;">/#/releases/net/minecraftforge/forge/1.12.2-14.23.5.2860/</a></p>
+      </div>
+    </body>
+</html>--- maven-metadata.xml (1.12.2 tail) ---
+      <version>1.21.11-61.1.11</version>
+      <version>1.21.10-60.1.12</version>
+      <version>26.2-65.0.8</version>
+      <version>26.2-65.0.9</version>
+      <version>1.21.8-58.1.20</version>
+      <version>1.21.11-61.1.12</version>
+      <version>1.21.10-60.1.13</version>
+      <version>26.2-65.1.0</version>
+      <version>26.1.2-64.0.15</version>
+      <version>26.1.2-64.0.16</version>
+      <version>26.1.2-64.1.0</version>
+      <version>1.21.11-61.1.13</version>
+      <version>1.21.11-61.1.14</version>
+      <version>1.20.4-49.2.9</version>
+      <version>1.21.8-58.1.21</version>
+      <version>1.21.3-53.1.12</version>
+      <version>1.21.4-54.1.18</version>
+      <version>1.21.5-55.1.12</version>
+      <version>1.21.11-61.1.15</version>
+      <version>1.21.11-61.1.16</version>
+      <version>1.21.11-61.2.0</version>
+      <version>26.2-65.1.1</version>
+      <version>26.1.2-64.1.1</version>
+      <version>1.21.11-61.2.1</version>
+      <version>1.21.10-60.1.14</version>
+      <version>1.21.10-60.1.15</version>
+      <version>1.21.8-58.1.22</version>
+      <version>1.21.5-55.1.13</version>
+      <version>26.2-65.1.2</version>
+      <version>1.20.1-47.4.23</version>
+      <version>26.1.2-64.1.2</version>
+      <version>26.2-65.1.3</version>
+      <version>26.1.2-64.1.3</version>
+      <version>1.19.4-45.4.5</version>
+      <version>26.3-66.0.0</version>
+      <version>26.3-66.0.2</version>
+    </versions>
+    <lastUpdated>20260919210750</lastUpdated>
+  </versioning>
+</metadata>
+--- other hosts ---
+301  https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-userdev.jar
+200  https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml
+404  https://libraries.minecraft.net/net/minecraft/client/1.12.2/client-1.12.2.jar
+404  https://piston-data.mojang.com/mc/game/version_manifest.json
+--- done ---
+
+=== build ===
 To honour the JVM settings for this build a new JVM will be forked. Please consider using the daemon: https://docs.gradle.org/4.10.3/userguide/gradle_daemon.html.
 Daemon will be stopped at the end of the build stopping after processing
 
@@ -127,6 +295,5 @@ Searched in the following locations:
 
 * Get more help at https://help.gradle.org
 
-BUILD FAILED in 14s
+BUILD FAILED in 7s
 3 actionable tasks: 3 executed
-run: 35601924118 attempt 1
