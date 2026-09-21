@@ -5,6 +5,11 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publish build/libs as a GitHub release'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -178,3 +183,20 @@ jobs:
           name: ScriptCraft-jar
           path: build/libs/ScriptCraft-*.jar
           if-no-files-found: error
+
+      # Release assets are uploaded through uploads.github.com, which some environments cannot
+      # reach; this step runs on the runner instead, so the release always gets its assets.
+      - name: Publish the release
+        if: steps.build.outcome == 'success' && github.event.inputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version=$(grep -oE "version = '[0-9.]+'" build.gradle | head -1 | cut -d"'" -f2)
+          tag="v$version"
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" build/libs/ScriptCraft-*.jar \
+            --title "ScriptCraft $version" \
+            --target "${GITHUB_SHA}" \
+            --notes-file RELEASE_NOTES.md
+          gh release view "$tag" --json url,assets --jq '"release \(.url) assets: \([.assets[].name] | join(", "))"'
