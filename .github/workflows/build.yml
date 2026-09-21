@@ -32,10 +32,6 @@ jobs:
           java -version
           ./gradlew --version
 
-      - name: Offline verification rig
-        continue-on-error: true
-        run: ./dev-verify/verify.sh 2>&1 | tee ci-verify.log
-
       - name: Build
         id: build
         continue-on-error: true
@@ -47,25 +43,8 @@ jobs:
         if: always()
         run: ls -l build/libs || true
 
-      # The Actions log endpoints are not reachable from every environment. On failure the
-      # build log is committed back to the branch so it can be read with a normal git pull.
-      - name: Publish the build log
-        if: failure()
-        run: |
-          {
-            echo "=== verify ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
-            tail -c 20000 ci-verify.log 2>/dev/null
-            echo
-            echo "=== build ==="
-            tail -c 60000 ci-build.log 2>/dev/null
-          } > ci-last-build.log
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f ci-last-build.log
-          git commit -m 'ci: build log [skip ci]' || true
-          git push origin HEAD:${GITHUB_REF_NAME} || true
-
-      # Same reason: the artifact download also goes through a host that may be unreachable.
+      # The Actions artifact download goes through a host that is not reachable from every
+      # environment, so the jar is also committed to dist/ and can be picked up with a pull.
       - name: Publish the jar
         if: steps.build.outcome == 'success'
         run: |
@@ -80,6 +59,29 @@ jobs:
             git commit -m 'ci: built jar [skip ci]'
             git push origin HEAD:${GITHUB_REF_NAME} || true
           fi
+
+      # Same JDK 8 and the same Nashorn the mod uses at runtime; runs after the jar
+      # publication so a rig failure still leaves dist/ updated, but still fails the job.
+      - name: Offline verification rig
+        run: ./dev-verify/verify.sh 2>&1 | tee ci-verify.log
+
+      # The Actions log endpoints are not reachable from every environment either. On failure
+      # the logs are committed back to the branch so they can be read with a normal git pull.
+      - name: Publish the build log
+        if: failure() || steps.build.outcome == 'failure'
+        run: |
+          {
+            echo "=== verify ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
+            tail -c 20000 ci-verify.log 2>/dev/null
+            echo
+            echo "=== build ==="
+            tail -c 60000 ci-build.log 2>/dev/null
+          } > ci-last-build.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f ci-last-build.log
+          git commit -m 'ci: build log [skip ci]' || true
+          git push origin HEAD:${GITHUB_REF_NAME} || true
 
       - name: Fail if the build failed
         if: steps.build.outcome == 'failure'
