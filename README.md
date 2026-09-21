@@ -147,6 +147,12 @@ compiled against. This does not change what the mod runs on: `mcmod.info` declar
 on 14.23.5.2859 (and on any other 1.12.2 build) unchanged. Nothing in the mod uses an API
 added between 2847 and 2859.
 
+If you still have the 2859 userdev package in your Gradle cache from an older build, you can
+compile against it exactly: set `forgeVersion = '1.12.2-14.23.5.2859'` and build with
+`./gradlew build --offline`, or drop the file into a local maven repository and add that
+repository to `buildscript { repositories { ... } }`. Same jar either way — only the version of
+the Forge classes on the compile classpath changes.
+
 ### Continuous build
 
 `.github/workflows/build.yml` runs `./gradlew build` on JDK 8 for every push, uploads the jar
