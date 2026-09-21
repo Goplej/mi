@@ -189,7 +189,10 @@ jobs:
           if [ "${GITHUB_REF_TYPE}" != "branch" ]; then target=arena/01a0c3ee-mi; fi
           git push origin HEAD:refs/heads/$target || true
 
+      # Nice to have, not the delivery path: the jar is in the repository (build/libs, release/)
+      # and in the release assets. Uploading artifacts needs a permission the token may not have.
       - name: Upload jar
+        continue-on-error: true
         uses: actions/upload-artifact@v6
         with:
           name: ScriptCraft-jar
