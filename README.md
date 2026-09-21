@@ -45,9 +45,14 @@ player.sendMessage("ScriptCraft loaded successfully!");
 ## Installation
 
 1. Install Minecraft 1.12.2 with Forge 14.23.5.2859.
-2. Copy `release/ScriptCraft-0.1.0.jar` (built by CI, see [Building](#building)) or your own
-   `build/libs/ScriptCraft-0.1.0.jar` into your `mods` folder.
-3. Start the game. ScriptCraft creates its folders and logs:
+2. Take the built jar — it is already in the repository, no build needed:
+   * `build/libs/ScriptCraft-0.1.0.jar` (the path `./gradlew build` writes to),
+   * `release/ScriptCraft-0.1.0.jar` (a copy that `gradlew clean` does not delete),
+   * or the [releases page](https://github.com/Goplej/mi/releases) as a download.
+
+   All three are the same file, produced by the real ForgeGradle build on JDK 8 that
+   [.github/workflows/build.yml](.github/workflows/build.yml) runs on every push.
+3. Copy it into your `mods` folder and start the game. ScriptCraft creates its folders and logs:
 
 ```
 [ScriptCraft] Initializing...
@@ -123,6 +128,11 @@ Java 8 is required (Forge 1.12.2 and Nashorn both need it).
 ./gradlew runServer      # try it on a dedicated server
 ```
 
+The built jars are committed (`build/libs/ScriptCraft-*.jar`, `release/ScriptCraft-*.jar`) so a
+plain `git pull` always has an installable file. They are still build output: `gradlew clean`
+deletes them and then `git status` shows the deletions. `git checkout -- build/libs release`
+brings them back, or just run `gradlew build` again.
+
 The first run downloads ForgeGradle, the MCP mappings and the Forge userdev artifact from
 `maven.minecraftforge.net`; that network access has to work. The jar has to come from this
 build: ForgeGradle reobfuscates the mod classes to the production names Forge uses in game, so
@@ -158,7 +168,14 @@ the Forge classes on the compile classpath changes.
 `.github/workflows/build.yml` runs `./gradlew build` on JDK 8 for every push, uploads the jar
 as a workflow artifact, and copies it to [`release/`](release) so it can be picked up with a plain
 `git pull` — useful when the Actions artifact download is not reachable. `release/ScriptCraft-0.1.0.jar`
-is the jar that pipeline produced.
+and `build/libs/ScriptCraft-0.1.0.jar` are the jar that pipeline produced.
+
+A push also runs `dev-verify/verify.sh` on the same JDK 8, and a `Verify the built jar` step that
+unpacks the jar Gradle just wrote and asserts that it is really a reobfuscated Forge 1.12.2 mod
+jar — manifest, `mcmod.info` with `mcversion 1.12.2`, bundled examples, 50+ class files, class
+file major version 52, an `@Mod` link into FML, `@SideOnly(Side.CLIENT)` on the client proxy and
+SRG names (`func_*`) proving `reobfJar` ran. If any of that is missing the job fails instead of
+publishing.
 
 ### Offline verification
 

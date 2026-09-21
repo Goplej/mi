@@ -43,6 +43,43 @@ jobs:
         if: always()
         run: ls -l build/libs || true
 
+      # Proves the file Gradle produced really is a reobfuscated Forge 1.12.2 mod jar and not
+      # just something that happens to be named ScriptCraft-0.1.0.jar.
+      - name: Verify the built jar
+        if: steps.build.outcome == 'success'
+        run: |
+          set -uo pipefail
+          jar=build/libs/ScriptCraft-0.1.0.jar
+          test -f "$jar" || { echo "no jar at $jar"; exit 1; }
+
+          failures=0
+          check() {
+            if eval "$2" >/dev/null 2>&1; then
+              echo "ok       $1"
+            else
+              echo "FAILED   $1"
+              failures=$((failures + 1))
+            fi
+          }
+
+          check 'manifest names the mod'          "unzip -p $jar META-INF/MANIFEST.MF | grep -q 'Implementation-Title: ScriptCraft'"
+          check 'mcmod.info declares mcversion'   "unzip -p $jar mcmod.info | grep -q mcversion && unzip -p $jar mcmod.info | grep -q 1.12.2"
+          check 'bundled example is packaged'     "unzip -l $jar | grep -q 'assets/scriptcraft/examples/example.js'"
+          check 'at least 50 classes'             "test \$(unzip -l $jar | grep -c '\.class$') -ge 50"
+          check 'class files are Java 8 (major 52)' "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'major version: 52'"
+          check 'links against FML (@Mod)'        "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'net/minecraftforge/fml/common/Mod'"
+          check 'client proxy is @SideOnly(CLIENT)' "javap -verbose -cp $jar com.scriptcraft.client.ClientProxy | grep -q 'Lnet/minecraftforge/fml/relauncher/Side;.CLIENT'"
+          check 'reobfuscated (SRG names present)' "javap -c -p -cp $jar com.scriptcraft.api.PlayerApi | grep -qE 'func_[0-9a-z]+'"
+
+          classes=$(unzip -l "$jar" | grep -c '\.class$')
+          echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $classes classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
+
+          if [ "$failures" != 0 ]; then
+            echo "$failures check(s) failed"
+            exit 1
+          fi
+          echo 'the jar is a real, reobfuscated Forge 1.12.2 mod jar'
+
       # The Actions artifact download goes through a host that is not reachable from every
       # environment, so the jar is also committed to release/ and can be picked up with a pull.
       - name: Publish the jar

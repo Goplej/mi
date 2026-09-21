@@ -1,5 +1,11 @@
-# Gradle / ForgeGradle
+# Gradle / ForgeGradle. The compiled jar inside build/libs is tracked anyway (see below),
+# so a plain `git pull` always has a ready-to-install jar at the documented path.
 build/
+!build/
+build/*
+!build/libs/
+build/libs/*
+!build/libs/ScriptCraft-*.jar
 run/
 .gradle/
 out/
