@@ -34,7 +34,9 @@ jobs:
           distribution: temurin
           java-version: '8'
 
+      # Informational only - a flake here must not block the build.
       - name: Toolchain versions
+        continue-on-error: true
         run: |
           java -version
           ./gradlew --version
