@@ -45,15 +45,28 @@ jobs:
 
       # Proves the file Gradle produced really is a reobfuscated Forge 1.12.2 mod jar and not
       # just something that happens to be named ScriptCraft-0.1.0.jar.
+      # Proves the file Gradle produced really is a reobfuscated Forge 1.12.2 mod jar and not
+      # just something that happens to be named ScriptCraft-0.1.0.jar. The dumps go to files
+      # first: `javap ... | grep -q ...` under `set -o pipefail` can die of SIGPIPE, and javap 8
+      # prints annotation values abbreviated (#7=e#8.#9) where javap 11 expands them, so the
+      # checks below only look at things both versions print the same way.
       - name: Verify the built jar
         if: steps.build.outcome == 'success'
         run: |
           set -uo pipefail
           exec > >(tee -a ci-verify.log) 2>&1
-          echo "javap: $(command -v javap)"; javap -version 2>&1 | head -1
+          echo "javap: $(command -v javap) $(javap -version 2>&1 | head -1)"
 
           jar=build/libs/ScriptCraft-0.1.0.jar
           test -f "$jar" || { echo "no jar at $jar"; exit 1; }
+
+          d=$(mktemp -d)
+          unzip -l "$jar" > "$d/list.txt"
+          unzip -p "$jar" META-INF/MANIFEST.MF > "$d/manifest.txt"
+          unzip -p "$jar" mcmod.info > "$d/mcmod.txt"
+          javap -verbose -cp "$jar" com.scriptcraft.ScriptCraft > "$d/mod.txt" 2>&1
+          javap -verbose -cp "$jar" com.scriptcraft.client.ClientProxy > "$d/client.txt" 2>&1
+          javap -c -p -cp "$jar" com.scriptcraft.api.PlayerApi > "$d/player.txt" 2>&1
 
           failures=0
           check() {
@@ -61,30 +74,28 @@ jobs:
               echo "ok       $1"
             else
               echo "FAILED   $1"
-              # Annotations are readable through the API even when the raw log is not.
               echo "::warning title=Jar check failed::$1"
               failures=$((failures + 1))
             fi
           }
 
-          check 'manifest names the mod'          "unzip -p $jar META-INF/MANIFEST.MF | grep -q 'Implementation-Title: ScriptCraft'"
-          check 'mcmod.info declares mcversion'   "unzip -p $jar mcmod.info | grep -q mcversion && unzip -p $jar mcmod.info | grep -q 1.12.2"
-          check 'bundled example is packaged'     "unzip -l $jar | grep -q 'assets/scriptcraft/examples/example.js'"
-          check 'at least 50 classes'             "test \$(unzip -l $jar | grep -c '\.class$') -ge 50"
-          check 'class files are Java 8 (major 52)' "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'major version: 52'"
-          check 'links against FML (@Mod)'        "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'net/minecraftforge/fml/common/Mod'"
-          proxy_annotations="javap -verbose -cp $jar com.scriptcraft.client.ClientProxy | grep -E 'SideOnly|Side;'"
-          check 'client proxy is @SideOnly(CLIENT)' "$proxy_annotations && $proxy_annotations | grep -q CLIENT"
-          check 'reobfuscated (SRG names present)' "javap -c -p -cp $jar com.scriptcraft.api.PlayerApi | grep -qE 'func_[0-9a-z]+'"
+          check 'manifest names the mod'            "grep -q 'Implementation-Title: ScriptCraft' $d/manifest.txt"
+          check 'mcmod.info declares mcversion'     "grep -q mcversion $d/mcmod.txt && grep -q 1.12.2 $d/mcmod.txt"
+          check 'bundled example is packaged'       "grep -q 'assets/scriptcraft/examples/example.js' $d/list.txt"
+          check 'at least 50 classes'               "[ \$(grep -c '\.class$' $d/list.txt) -ge 50 ]"
+          check 'class files are Java 8 (major 52)' "grep -q 'major version: 52' $d/mod.txt"
+          check 'links against FML (@Mod)'          "grep -q 'net/minecraftforge/fml/common/Mod' $d/mod.txt"
+          check 'client proxy is @SideOnly(CLIENT)' "grep -q SideOnly $d/client.txt && grep -q CLIENT $d/client.txt"
+          check 'reobfuscated (SRG names present)'  "grep -qE 'func_[0-9a-z]+' $d/player.txt"
 
-          classes=$(unzip -l "$jar" | grep -c '\.class$')
-          echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $classes classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
+          echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $(grep -c '\.class$' "$d/list.txt") classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
 
           if [ "$failures" != 0 ]; then
-            echo "$failures check(s) failed; dumping javap output"
-            javap -verbose -cp "$jar" com.scriptcraft.ScriptCraft 2>&1 | grep -E 'major version|Mod' | head -5
-            javap -verbose -cp "$jar" com.scriptcraft.client.ClientProxy 2>&1 | tail -20
-            javap -c -p -cp "$jar" com.scriptcraft.api.PlayerApi 2>&1 | grep -oE 'func_[0-9a-z_]+|Method [a-zA-Z_]+' | sort -u | head -10
+            echo "$failures check(s) failed; dumps follow"
+            for f in client.txt mod.txt player.txt; do
+              echo "--- $f ---"
+              head -40 "$d/$f"
+            done
             exit 1
           fi
           echo 'the jar is a real, reobfuscated Forge 1.12.2 mod jar'
