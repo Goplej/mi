@@ -45,7 +45,8 @@ player.sendMessage("ScriptCraft loaded successfully!");
 ## Installation
 
 1. Install Minecraft 1.12.2 with Forge 14.23.5.2859.
-2. Copy `build/libs/ScriptCraft-0.1.0.jar` into your `mods` folder.
+2. Copy `dist/ScriptCraft-0.1.0.jar` (built by CI, see [Building](#building)) or your own
+   `build/libs/ScriptCraft-0.1.0.jar` into your `mods` folder.
 3. Start the game. ScriptCraft creates its folders and logs:
 
 ```

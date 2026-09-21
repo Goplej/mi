@@ -54,6 +54,11 @@ processResources {
 }
 
 jar {
+    // Byte-for-byte reproducible: without this every build embeds the time it ran and
+    // produces a different file for the same sources.
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
     // Nashorn ships with Java 8, so the mod has no runtime dependencies.
     manifest {
         attributes(

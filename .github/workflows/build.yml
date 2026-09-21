@@ -63,7 +63,13 @@ jobs:
       # Same JDK 8 and the same Nashorn the mod uses at runtime; runs after the jar
       # publication so a rig failure still leaves dist/ updated, but still fails the job.
       - name: Offline verification rig
-        run: ./dev-verify/verify.sh 2>&1 | tee ci-verify.log
+        run: |
+          set +e
+          ./dev-verify/verify.sh 2>&1 | tee ci-verify.log
+          status=${PIPESTATUS[0]}
+          javac -version 2>&1 | sed 's/^/::notice title=Rig toolchain::/'
+          grep -E 'PASSED:' ci-verify.log | tail -1 | sed 's/^/::notice title=Rig result::/'
+          exit $status
 
       # The Actions log endpoints are not reachable from every environment either. On failure
       # the logs are committed back to the branch so they can be read with a normal git pull.

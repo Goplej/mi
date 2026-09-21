@@ -18,7 +18,9 @@ build environment. This directory gives an answer that does not depend on that n
 ```
 
 The harness runs the **real** JavaScript engine (Nashorn) and the **real** mod code, so a bug in
-ScriptCraft shows up here as a FAIL. With a JDK 8 the engine is Nashorn 1.8, exactly what
+ScriptCraft shows up here as a FAIL. `.github/workflows/build.yml` runs this script on a real
+JDK 8 as a hard gate after each `gradlew build`, so the rig is also exercised against the JDK
+Nashorn that Minecraft 1.12.2 itself runs. With a JDK 8 the engine is Nashorn 1.8, exactly what
 Minecraft 1.12.2 runs; with a newer JDK it is that JDK's Nashorn, which is the same API.
 
 ## What this proves and what it does not
