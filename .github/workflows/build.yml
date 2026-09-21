@@ -133,11 +133,13 @@ jobs:
 
             if [ -n "$reference" ] && git show "HEAD:$reference" > /tmp/tracked.jar \
                && [ "$(fingerprint "$built")" = "$(fingerprint /tmp/tracked.jar)" ]; then
-              echo "$name: content unchanged, keeping the tracked bytes"
+              echo "$name: build output matches what is tracked, keeping the tracked bytes"
               cp /tmp/tracked.jar "$built"
               for target in "build/libs/$name" "release/$name"; do
                 if git cat-file -e "HEAD:$target" 2>/dev/null; then
+                  # both copies have to carry the same jar; this is a no-op once they do
                   cp /tmp/tracked.jar "$target"
+                  git add -f "$target"
                 fi
               done
             else
