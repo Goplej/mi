@@ -127,5 +127,6 @@ Searched in the following locations:
 
 * Get more help at https://help.gradle.org
 
-BUILD FAILED in 7s
+BUILD FAILED in 14s
 3 actionable tasks: 3 executed
+run: 35601924118 attempt 1
