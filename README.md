@@ -123,7 +123,9 @@ Java 8 is required (Forge 1.12.2 and Nashorn both need it).
 ```
 
 The first run downloads ForgeGradle, the MCP mappings and the Forge userdev artifact from
-`maven.minecraftforge.net`; that network access has to work.
+`maven.minecraftforge.net`; that network access has to work. The jar has to come from this
+build: ForgeGradle reobfuscates the mod classes to the production names Forge uses in game, so
+class files produced some other way will not link against a released 1.12.2 Forge.
 
 ### Offline verification
 
