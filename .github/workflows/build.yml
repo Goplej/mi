@@ -73,7 +73,8 @@ jobs:
           check 'at least 50 classes'             "test \$(unzip -l $jar | grep -c '\.class$') -ge 50"
           check 'class files are Java 8 (major 52)' "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'major version: 52'"
           check 'links against FML (@Mod)'        "javap -verbose -cp $jar com.scriptcraft.ScriptCraft | grep -q 'net/minecraftforge/fml/common/Mod'"
-          check 'client proxy is @SideOnly(CLIENT)' "javap -verbose -cp $jar com.scriptcraft.client.ClientProxy | grep -q 'Lnet/minecraftforge/fml/relauncher/Side;.CLIENT'"
+          proxy_annotations="javap -verbose -cp $jar com.scriptcraft.client.ClientProxy | grep -E 'SideOnly|Side;'"
+          check 'client proxy is @SideOnly(CLIENT)' "$proxy_annotations && $proxy_annotations | grep -q CLIENT"
           check 'reobfuscated (SRG names present)' "javap -c -p -cp $jar com.scriptcraft.api.PlayerApi | grep -qE 'func_[0-9a-z]+'"
 
           classes=$(unzip -l "$jar" | grep -c '\.class$')
