@@ -34,6 +34,7 @@ jobs:
 
       - name: Probe the Forge maven
         run: |
+          exec > >(tee -a ci-build.log) 2>&1
           base=https://maven.minecraftforge.net/net/minecraftforge/forge
           for v in 1.12.2-14.23.5.2859 1.12.2-14.23.5.2860 1.12.2-14.23.5.2847 1.12.2-14.23.5.2768; do
             for suffix in -userdev.jar -universal.jar .jar -src.zip; do
@@ -72,6 +73,7 @@ jobs:
         run: |
           if [ ! -f ci-build.log ]; then echo "no log produced" > ci-build.log; fi
           tail -c 90000 ci-build.log > ci-last-build.log
+          echo "run: $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" >> ci-last-build.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f ci-last-build.log
