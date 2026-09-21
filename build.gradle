@@ -14,6 +14,18 @@ version = '0.1.0'
 group = 'com.scriptcraft'
 archivesBaseName = 'ScriptCraft'
 
+ext {
+    // What the jar declares to Forge: the game version, not the Forge build number.
+    mcVersion = '1.12.2'
+    // The Forge build ForgeGradle compiles against. It has to be a build whose
+    // "-userdev" package is still published on maven.minecraftforge.net: the last two
+    // 1.12.2 builds (14.23.5.2859, 14.23.5.2860) only have the universal jar and the pom
+    // there, and ForgeGradle 2.3 cannot decompile without userdev. 2847 is the newest
+    // 1.12.2 build that still has one. The resulting jar runs on 14.23.5.2859 as well -
+    // Forge matches the mcversion field (1.12.2), not the build number.
+    forgeVersion = '1.12.2-14.23.5.2847'
+}
+
 sourceCompatibility = targetCompatibility = '1.8'
 compileJava {
     sourceCompatibility = targetCompatibility = '1.8'
@@ -21,19 +33,19 @@ compileJava {
 }
 
 minecraft {
-    version = '1.12.2-14.23.5.2859'
+    version = project.forgeVersion
     runDir = 'run'
-    // MCP mappings for 1.12.2
+    // MCP mappings for 1.12.2 (the "designed for MC 1.12" warning is expected and harmless)
     mappings = 'stable_39'
 }
 
 processResources {
     inputs.property 'version', project.version
-    inputs.property 'mcversion', project.minecraft.version
+    inputs.property 'mcversion', project.mcVersion
 
     from(sourceSets.main.resources.srcDirs) {
         include 'mcmod.info'
-        expand 'version': project.version, 'mcversion': project.minecraft.version
+        expand 'version': project.version, 'mcversion': project.mcVersion
     }
 
     from(sourceSets.main.resources.srcDirs) {
