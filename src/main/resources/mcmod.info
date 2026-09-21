@@ -1,0 +1,16 @@
+[
+{
+  "modid": "scriptcraft",
+  "name": "ScriptCraft",
+  "description": "JavaScript scripting for Minecraft 1.12.2. Drop .js files into .minecraft/scriptcraft/scripts and run them with /script run <file> or from the in-game IDE (K).",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["ScriptCraft"],
+  "credits": "Nashorn (Java 8) as the JavaScript engine",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
