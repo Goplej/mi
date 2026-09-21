@@ -1,0 +1,121 @@
+=== run 35605011906 attempt 1 ===
+--- ci-verify.log ---
+javap: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8.0.504-1/x64/bin/javap
+1.8.0_504
+ok       manifest names the mod
+ok       mcmod.info declares mcversion
+ok       bundled example is packaged
+ok       at least 50 classes
+ok       class files are Java 8 (major 52)
+ok       links against FML (@Mod)
+FAILED   client proxy is @SideOnly(CLIENT)
+::warning title=Jar check failed::client proxy is @SideOnly(CLIENT)
+ok       reobfuscated (SRG names present)
+::notice title=Built jar::build/libs/ScriptCraft-0.1.0.jar - 99193 bytes, 55 classes, sha256 5d13ac1a03f1666eef211db957c7e91e
+1 check(s) failed; dumping javap output
+  major version: 52
+    #6 = Utf8               Lnet/minecraftforge/fml/common/Mod;
+   #17 = Utf8               net/minecraftforge/fml/common/Mod$Instance
+   #18 = Class              #17           // net/minecraftforge/fml/common/Mod$Instance
+   #19 = Utf8               net/minecraftforge/fml/common/Mod
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=3, locals=1, args_size=1
+         0: invokestatic  #30                 // Method net/minecraft/client/Minecraft.func_71410_x:()Lnet/minecraft/client/Minecraft;
+         3: new           #32                 // class com/scriptcraft/client/GuiScriptIde
+         6: dup
+         7: invokespecial #33                 // Method com/scriptcraft/client/GuiScriptIde."<init>":()V
+        10: invokevirtual #37                 // Method net/minecraft/client/Minecraft.func_147108_a:(Lnet/minecraft/client/gui/GuiScreen;)V
+        13: return
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      14     0  this   Lcom/scriptcraft/client/ClientProxy;
+      LineNumberTable:
+        line 27: 0
+        line 28: 13
+}
+SourceFile: "ClientProxy.java"
+RuntimeVisibleAnnotations:
+  0: #6(#7=e#8.#9)
+Method com
+Method getName
+Method java
+Method net
+func_110138_a
+func_110143_a
+func_146105_b
+func_184614_ca
+func_194028_b
+func_70005_c_
+--- ci-build.log ---
+To honour the JVM settings for this build a new JVM will be forked. Please consider using the daemon: https://docs.gradle.org/4.10.3/userguide/gradle_daemon.html.
+Daemon will be stopped at the end of the build stopping after processing
+
+> Configure project :
+This mapping 'stable_39' was designed for MC 1.12! Use at your own peril.
+WARNING: You are using an unsupported version of ForgeGradle.
+Please consider upgrading to ForgeGradle 5 and helping in the efforts to get old versions working on the modern toolchain.
+See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.
+#################################################
+         ForgeGradle 2.3.4-gfc67182        
+  https://github.com/MinecraftForge/ForgeGradle  
+#################################################
+                 Powered by MCP                  
+             http://modcoderpack.com             
+     by: Searge, ProfMobius, R4wk, ZeuX          
+     Fesh0r, IngisKahn, bspkrs, LexManos         
+#################################################
+
+> Task :deobfCompileDummyTask
+> Task :getVersionJson
+> Task :extractUserdev
+> Task :downloadClient
+> Task :downloadServer
+> Task :splitServerJar
+> Task :mergeJars
+> Task :applyBinaryPatches
+> Task :deobfProvidedDummyTask
+> Task :extractDependencyATs SKIPPED
+> Task :extractMcpData
+> Task :extractMcpMappings
+> Task :genSrgs
+
+> Task :deobfMcMCP
+Applying SpecialSource...
+Applying Exceptor...
+
+> Task :sourceApiJava
+> Task :compileApiJava NO-SOURCE
+> Task :processApiResources NO-SOURCE
+> Task :apiClasses UP-TO-DATE
+> Task :sourceMainJava
+> Task :compileJava
+> Task :processResources
+> Task :classes
+> Task :jar
+> Task :sourceTestJava
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :reobfJar
+> Task :extractAnnotationsJar
+
+> Task :extractRangemapReplacedMain
+/home/runner/work/mi/mi/build/sources/main/java
+
+> Task :retromapReplacedMain
+remapping source...
+
+> Task :sourceJar
+> Task :assemble
+> Task :check UP-TO-DATE
+> Task :build
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 5.0.
+Use '--warning-mode all' to show the individual deprecation warnings.
+See https://docs.gradle.org/4.10.3/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 1m 3s
+24 actionable tasks: 24 executed
