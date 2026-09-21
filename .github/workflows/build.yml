@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       create_release:
@@ -108,7 +110,7 @@ jobs:
       # The Actions artifact download goes through a host that is not reachable from every
       # environment, so the jar is also committed to release/ and can be picked up with a pull.
       - name: Publish the jar
-        if: steps.build.outcome == 'success'
+        if: steps.build.outcome == 'success' && github.ref_type == 'branch'
         run: |
           # reobfJar stamps the entries with the build time, so fall back to comparing the
           # content (entry names and CRCs) instead of the file bytes.
@@ -187,16 +189,25 @@ jobs:
       # Release assets are uploaded through uploads.github.com, which some environments cannot
       # reach; this step runs on the runner instead, so the release always gets its assets.
       - name: Publish the release
-        if: steps.build.outcome == 'success' && github.event.inputs.create_release == 'true'
+        if: |
+          steps.build.outcome == 'success' &&
+          (github.ref_type == 'tag' || github.event.inputs.create_release == 'true')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           version=$(grep -oE "version = '[0-9.]+'" build.gradle | head -1 | cut -d"'" -f2)
-          tag="v$version"
+          tag="${GITHUB_REF_NAME}"
+          case "$tag" in v*[0-9]) ;; *) tag="v$version" ;; esac
+
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" build/libs/ScriptCraft-*.jar \
-            --title "ScriptCraft $version" \
-            --target "${GITHUB_SHA}" \
-            --notes-file RELEASE_NOTES.md
+
+          args="build/libs/ScriptCraft-*.jar --title ScriptCraft-$version --notes-file RELEASE_NOTES.md"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            # The tag that triggered this run already exists.
+            gh release create "$tag" $args
+          else
+            gh release create "$tag" $args --target "${GITHUB_SHA}"
+          fi
+
           gh release view "$tag" --json url,assets --jq '"release \(.url) assets: \([.assets[].name] | join(", "))"'

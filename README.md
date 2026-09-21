@@ -50,7 +50,7 @@ player.sendMessage("ScriptCraft loaded successfully!");
    * `release/ScriptCraft-0.1.0.jar` (a copy that `gradlew clean` does not delete),
    * or the [releases page](https://github.com/Goplej/mi/releases) as a download (assets are
      uploaded by the `Publish the release` step of the workflow, triggered with
-     `gh workflow run build.yml -f create_release=true`).
+     `git push origin v0.1.0` or `gh workflow run build.yml -f create_release=true`).
 
    All three are the same file, produced by the real ForgeGradle build on JDK 8 that
    [.github/workflows/build.yml](.github/workflows/build.yml) runs on every push.
