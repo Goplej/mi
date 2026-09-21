@@ -48,17 +48,38 @@ jobs:
       - name: Publish the jar
         if: steps.build.outcome == 'success'
         run: |
+          # reobfJar stamps the entries with the build time, so fall back to comparing the
+          # content (entry names and CRCs) instead of the file bytes.
+          fingerprint() { unzip -v "$1" | awk 'NR>3 {print $7, $8}' | sort; }
+
           mkdir -p dist
-          cp build/libs/ScriptCraft-*.jar dist/
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f dist
-          if git diff --cached --quiet; then
-            echo "dist/ is already up to date"
-          else
-            git commit -m 'ci: built jar [skip ci]'
-            git push origin HEAD:${GITHUB_REF_NAME} || true
+
+          changed=0
+          for built in build/libs/ScriptCraft-*.jar; do
+            name=$(basename "$built")
+            if git cat-file -e "HEAD:dist/$name" 2>/dev/null; then
+              git show "HEAD:dist/$name" > /tmp/previous.jar
+              if [ "$(fingerprint "$built")" != "$(fingerprint /tmp/previous.jar)" ]; then
+                echo "$name changed"
+                changed=1
+              fi
+            else
+              echo "$name is new"
+              changed=1
+            fi
+            cp "$built" "dist/$name"
+          done
+
+          if [ "$changed" = 0 ]; then
+            echo "dist/ content is unchanged; nothing to publish"
+            exit 0
           fi
+
+          git add -f dist
+          git commit -m 'ci: built jar [skip ci]'
+          git push origin HEAD:${GITHUB_REF_NAME} || true
 
       # Same JDK 8 and the same Nashorn the mod uses at runtime; runs after the jar
       # publication so a rig failure still leaves dist/ updated, but still fails the job.

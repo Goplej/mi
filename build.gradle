@@ -54,8 +54,9 @@ processResources {
 }
 
 jar {
-    // Byte-for-byte reproducible: without this every build embeds the time it ran and
-    // produces a different file for the same sources.
+    // Deterministic archives. Note that ForgeGradle's reobfJar repacks the jar afterwards
+    // and stamps the entries with the build time, so the published jar is reproducible in
+    // content (same entries, same bytes per entry) but not in its timestamps.
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 
