@@ -32,31 +32,9 @@ jobs:
           java -version
           ./gradlew --version
 
-      - name: Probe the toolchain hosts
+      - name: Offline verification rig
         continue-on-error: true
-        run: |
-          {
-            echo '--- mojang ---'
-            meta=https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
-            printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$meta" || echo ERR)" "$meta"
-            vurl=$(curl -sSL -m 25 "$meta" | python3 -c "import sys,json;d=json.load(sys.stdin);print([v['url'] for v in d['versions'] if v['id']=='1.12.2'][0])" 2>/dev/null || true)
-            echo "1.12.2 version json: $vurl"
-            if [ -n "$vurl" ]; then
-              curl -sSL -m 25 "$vurl" | python3 -c "import sys,json;d=json.load(sys.stdin);[print(k,v.get('url'),v.get('size')) for k,v in d['downloads'].items() if isinstance(v,dict)]" 2>/dev/null || true
-            fi
-            echo '--- forge maven, per build ---'
-            base=https://maven.minecraftforge.net/net/minecraftforge/forge
-            for v in 1.12.2-14.23.5.2847 1.12.2-14.23.5.2859; do
-              printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$base/$v/forge-$v-userdev.jar" || echo ERR)" "$base/$v/forge-$v-userdev.jar"
-            done
-            echo '--- third party mirror that may still have 2859 userdev ---'
-            for url in \
-              https://maven.cleanroommc.com/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-userdev.jar \
-              https://maven.cleanroommc.com/net/minecraftforge/forge/maven-metadata.xml ; do
-              printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$url" || echo ERR)" "$url"
-            done
-            echo '--- done ---'
-          } 2>&1 | tee ci-probe.log
+        run: ./dev-verify/verify.sh 2>&1 | tee ci-verify.log
 
       - name: Build
         id: build
@@ -69,31 +47,39 @@ jobs:
         if: always()
         run: ls -l build/libs || true
 
-      # The Actions log endpoints are not reachable from every environment, so the build
-      # log (and the jar itself) are committed back to the branch and can be picked up
-      # with a normal git pull. Nothing here is needed by the mod at runtime.
-      - name: Publish build log and jar
-        if: always()
+      # The Actions log endpoints are not reachable from every environment. On failure the
+      # build log is committed back to the branch so it can be read with a normal git pull.
+      - name: Publish the build log
+        if: failure()
         run: |
           {
-            echo "=== probe ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
-            tail -c 20000 ci-probe.log 2>/dev/null
+            echo "=== verify ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
+            tail -c 20000 ci-verify.log 2>/dev/null
             echo
             echo "=== build ==="
             tail -c 60000 ci-build.log 2>/dev/null
           } > ci-last-build.log
-
-          if [ -d build/libs ] && ls build/libs/ScriptCraft-*.jar >/dev/null 2>&1; then
-            mkdir -p dist
-            cp build/libs/ScriptCraft-*.jar dist/
-          fi
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f ci-last-build.log
-          if [ -d dist ]; then git add -f dist; fi
-          git commit -m 'ci: build log and jar [skip ci]' || true
+          git commit -m 'ci: build log [skip ci]' || true
           git push origin HEAD:${GITHUB_REF_NAME} || true
+
+      # Same reason: the artifact download also goes through a host that may be unreachable.
+      - name: Publish the jar
+        if: steps.build.outcome == 'success'
+        run: |
+          mkdir -p dist
+          cp build/libs/ScriptCraft-*.jar dist/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f dist
+          if git diff --cached --quiet; then
+            echo "dist/ is already up to date"
+          else
+            git commit -m 'ci: built jar [skip ci]'
+            git push origin HEAD:${GITHUB_REF_NAME} || true
+          fi
 
       - name: Fail if the build failed
         if: steps.build.outcome == 'failure'

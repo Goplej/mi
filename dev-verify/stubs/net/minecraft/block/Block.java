@@ -45,6 +45,8 @@ public class Block {
     public static Block getBlockById(int id) { return id >= 0 && id < BY_ID.size() ? BY_ID.get(id) : AIR; }
 
     public final IBlockState getDefaultState() { return defaultState; }
+    /** Deprecated in the real 1.12.2 sources; mirrored here so the rig reports callers. */
+    @Deprecated
     public IBlockState getStateFromMeta(int meta) { return new IBlockState(this, meta); }
     public int getMetaFromState(IBlockState state) { return state.meta(); }
     public String getLocalizedName() { return name; }

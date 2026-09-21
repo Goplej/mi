@@ -38,12 +38,25 @@ final class BlockLookup {
         IBlockState state = block.getDefaultState();
         if (metaFromName != 0) {
             try {
-                state = block.getStateFromMeta(metaFromName);
+                state = stateForMeta(block, metaFromName);
             } catch (RuntimeException e) {
                 throw new IllegalArgumentException("Invalid metadata " + metaFromName + " for " + name);
             }
         }
         return state;
+    }
+
+    /**
+     * Turns a numeric metadata value into the state the block expects.
+     *
+     * <p>{@code Block.getStateFromMeta} is deprecated in 1.12.2 - Forge would rather mods
+     * address state properties by name - but a script that writes {@code "minecraft:log:2"}
+     * only has a number, and this is the only mapping from a number to a state, the same one
+     * the game itself uses when it loads a chunk.
+     */
+    @SuppressWarnings("deprecation")
+    private static IBlockState stateForMeta(Block block, int meta) {
+        return block.getStateFromMeta(meta);
     }
 
     static int idOf(String name) {

@@ -16,3 +16,7 @@ bin/
 
 # Local verification workspace (dev-verify output only; sources are committed)
 dev-verify/build/
+# CI logs published on failure by .github/workflows/build.yml
+ci-last-build.log
+ci-build.log
+ci-verify.log

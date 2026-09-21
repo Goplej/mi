@@ -127,6 +127,32 @@ The first run downloads ForgeGradle, the MCP mappings and the Forge userdev arti
 build: ForgeGradle reobfuscates the mod classes to the production names Forge uses in game, so
 class files produced some other way will not link against a released 1.12.2 Forge.
 
+### Which Forge build is compiled against
+
+`build.gradle` sets `forgeVersion = '1.12.2-14.23.5.2847'`, not `2859`. ForgeGradle 2.3 needs
+the Forge *userdev* package at compile time, and Forge's maven no longer publishes one for the
+last two 1.12.2 builds:
+
+| Forge 1.12.2 build | `forge-<version>-userdev.jar` on maven.minecraftforge.net |
+| --- | --- |
+| 14.23.5.2768 | present |
+| 14.23.5.2847 | present |
+| 14.23.5.2859 | **404** (only the universal jar and the pom are published) |
+| 14.23.5.2860 | **404** |
+
+2847 is the newest 1.12.2 build that still has a userdev package, so that is what the mod is
+compiled against. This does not change what the mod runs on: `mcmod.info` declares
+`mcversion 1.12.2`, and Forge matches that field, not the Forge build number, so the jar loads
+on 14.23.5.2859 (and on any other 1.12.2 build) unchanged. Nothing in the mod uses an API
+added between 2847 and 2859.
+
+### Continuous build
+
+`.github/workflows/build.yml` runs `./gradlew build` on JDK 8 for every push, uploads the jar
+as a workflow artifact, and copies it to [`dist/`](dist) so it can be picked up with a plain
+`git pull` — useful when the Actions artifact download is not reachable. `dist/ScriptCraft-0.1.0.jar`
+is the jar that pipeline produced.
+
 ### Offline verification
 
 `gradlew build` needs the Forge/MCP artifacts from the internet. Where that is not available,
