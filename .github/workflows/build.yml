@@ -33,27 +33,32 @@ jobs:
           ./gradlew --version
 
       - name: Probe the Forge maven
+        continue-on-error: true
         run: |
-          exec > >(tee -a ci-build.log) 2>&1
-          base=https://maven.minecraftforge.net/net/minecraftforge/forge
-          for v in 1.12.2-14.23.5.2859 1.12.2-14.23.5.2860 1.12.2-14.23.5.2847 1.12.2-14.23.5.2768; do
-            for suffix in -userdev.jar -universal.jar .jar -src.zip; do
-              url="$base/$v/forge-$v$suffix"
+          {
+            base=https://maven.minecraftforge.net/net/minecraftforge/forge
+            for v in 1.12.2-14.23.5.2859 1.12.2-14.23.5.2860 1.12.2-14.23.5.2847 1.12.2-14.23.5.2768; do
+              for suffix in -userdev.jar -userdev.zip -universal.jar .jar .pom -src.zip; do
+                url="$base/$v/forge-$v$suffix"
+                printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$url" || echo ERR)" "$url"
+              done
+            done
+            echo '--- directory listing: 1.12.2-14.23.5.2859 ---'
+            curl -sSL -m 25 "$base/1.12.2-14.23.5.2859/" || true
+            echo '--- directory listing: 1.12.2-14.23.5.2860 ---'
+            curl -sSL -m 25 "$base/1.12.2-14.23.5.2860/" || true
+            echo '--- maven-metadata.xml (1.12.2 tail) ---'
+            curl -sSL -m 25 "$base/maven-metadata.xml" | tail -40 || true
+            echo '--- other hosts ---'
+            for url in \
+              https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.12.2-14.23.5.2859/forge-1.12.2-14.23.5.2859-userdev.jar \
+              https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml \
+              https://libraries.minecraft.net/net/minecraft/client/1.12.2/client-1.12.2.jar \
+              https://piston-data.mojang.com/mc/game/version_manifest.json ; do
               printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$url" || echo ERR)" "$url"
             done
-          done
-          echo '--- directory listing of 2859 ---'
-          curl -sS -m 20 "$base/1.12.2-14.23.5.2859/" || true
-          echo '--- newest 1.12.2 versions in maven-metadata.xml ---'
-          curl -sS -m 20 "$base/maven-metadata.xml" | grep -o '<version>1\.12\.2[^<]*</version>' | tail -8 || true
-          echo '--- ForgeGradle snapshot metadata ---'
-          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://maven.minecraftforge.net/net/minecraftforge/gradle/ForgeGradle/2.3-SNAPSHOT/maven-metadata.xml || true
-          echo '--- mappings ---'
-          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_stable/39-1.12/mcp_stable-39-1.12.zip || true
-          echo '--- vanilla client ---'
-          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://libraries.minecraft.net/net/minecraft/client/1.12.2/client-1.12.2.jar || true
-          echo '--- piston ---'
-          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://piston-data.mojang.com/mc/game/version_manifest.json || true
+            echo '--- done ---'
+          } 2>&1 | tee ci-probe.log
 
       - name: Build
         id: build
@@ -71,9 +76,13 @@ jobs:
       - name: Publish build log
         if: always()
         run: |
-          if [ ! -f ci-build.log ]; then echo "no log produced" > ci-build.log; fi
-          tail -c 90000 ci-build.log > ci-last-build.log
-          echo "run: $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT" >> ci-last-build.log
+          {
+            echo "=== probe ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
+            tail -c 30000 ci-probe.log 2>/dev/null
+            echo
+            echo "=== build ==="
+            tail -c 60000 ci-build.log 2>/dev/null
+          } > ci-last-build.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f ci-last-build.log
