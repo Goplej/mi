@@ -8,9 +8,23 @@ import java.util.List;
 public class FontRenderer {
     public int FONT_HEIGHT = 9;
 
-    public int drawString(String text, int x, int y, int color) { return x + getStringWidth(text); }
-    public int drawString(String text, float x, float y, int color, boolean dropShadow) { return (int) x + getStringWidth(text); }
-    public int drawStringWithShadow(String text, float x, float y, int color) { return (int) x + getStringWidth(text); }
+    /** Every string handed to this renderer, so the harness can assert what the GUI drew. */
+    public static final List<String> drawnStrings = new ArrayList<String>();
+
+    public int drawString(String text, int x, int y, int color) {
+        drawnStrings.add(text);
+        return x + getStringWidth(text);
+    }
+
+    public int drawString(String text, float x, float y, int color, boolean dropShadow) {
+        drawnStrings.add(text);
+        return (int) x + getStringWidth(text);
+    }
+
+    public int drawStringWithShadow(String text, float x, float y, int color) {
+        drawnStrings.add(text);
+        return (int) x + getStringWidth(text);
+    }
     public int getStringWidth(String text) { return text == null ? 0 : text.length() * 6; }
 
     public String trimStringToWidth(String text, int width) { return trimStringToWidth(text, width, false); }

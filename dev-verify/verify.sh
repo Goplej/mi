@@ -6,7 +6,7 @@
 #
 # What this does:
 #   1. compiles every class under dev-verify/stubs  (compile-time stand-ins for Minecraft/Forge)
-#   2. compiles the whole mod (src/main/java) against them with javac 8 and -Xlint:all
+#   2. compiles the whole mod (src/main/java) against them, targeting Java 8, with -Xlint:all
 #   3. compiles and runs the harness, which boots the real mod classes and drives them
 #   4. packs a verification jar so the resource layout can be inspected
 #
@@ -14,6 +14,11 @@
 # stand-ins with the real 1.12.2 signatures, so this proves that the mod compiles against
 # Java 8 and that its own logic (engine, timers, events, sandbox, commands) behaves; the
 # real mod jar still comes from `gradlew build`.
+#
+# JDK: a JDK 8 is used when one is found, which is also the runtime Minecraft 1.12.2 uses.
+# A newer JDK works too - javac 9 to 20 compiles with `--release 8`, which checks the code
+# against the real Java 8 API (lib/ct.sym) and runs the harness on that JDK's Nashorn.
+# dev-verify/fetch-jdk.sh downloads a JDK for machines that have none.
 #
 set -euo pipefail
 
@@ -23,15 +28,31 @@ out="$here/build"
 
 jdk="${JAVA_HOME:-}"
 if [ -z "$jdk" ]; then
-    for candidate in /tmp/jdkrepo/jdk/1.8.0-144 /usr/lib/jvm/java-8-openjdk-amd64 /usr/lib/jvm/java-8-openjdk; do
+    for candidate in \
+        /tmp/scriptcraft-jdk /tmp/jdk11/jdk-11.0.18+10 /tmp/jdkrepo/jdk/1.8.0-144 \
+        /usr/lib/jvm/java-8-openjdk-amd64 /usr/lib/jvm/java-8-openjdk /usr/lib/jvm/default-java; do
         if [ -x "$candidate/bin/javac" ]; then jdk="$candidate"; break; fi
     done
 fi
 if [ -z "$jdk" ] || [ ! -x "$jdk/bin/javac" ]; then
-    echo "No Java 8 JDK found. Set JAVA_HOME to a JDK 8 installation (Nashorn ships with it)." >&2
+    echo "No JDK found. Set JAVA_HOME, or run dev-verify/fetch-jdk.sh" >&2
     exit 1
 fi
-"$jdk/bin/javac" -version 2>&1 | grep -q "1\.8" || { echo "javac from $jdk is not Java 8" >&2; exit 1; }
+jdk="$(cd "$jdk" && pwd)"
+
+if "$jdk/bin/javac" -version 2>&1 | grep -q "1\.8"; then
+    target=( -source 8 -target 8 )
+    jdk_note="javac 8"
+elif "$jdk/bin/javac" --release 8 -version >/dev/null 2>&1; then
+    target=( --release 8 )
+    jdk_note="javac $("$jdk/bin/javac" -version 2>&1 | sed 's/javac //') with --release 8"
+else
+    target=( -source 8 -target 8 )
+    jdk_note="javac $("$jdk/bin/javac" -version 2>&1 | sed 's/javac //') without --release 8 (API check is weaker; use a JDK 8 to 20)"
+    echo "warning: this javac cannot check the Java 8 API surface; $jdk_note" >&2
+fi
+echo "== 0/6 toolchain: $jdk_note"
+echo "              java: $("$jdk/bin/java" -version 2>&1 | head -1)"
 
 rm -rf "$out"
 mkdir -p "$out/stubs" "$out/classes" "$out/harness"
@@ -42,7 +63,7 @@ find "$here/stubs" -name '*.java' > "$out/stubs.txt"
 
 echo "== 2/6 compiling the mod ($(find "$root/src/main/java" -name '*.java' | wc -l | tr -d ' ') sources)"
 find "$root/src/main/java" -name '*.java' > "$out/src.txt"
-"$jdk/bin/javac" -Xlint:all -encoding UTF-8 -source 8 -target 8 \
+"$jdk/bin/javac" -Xlint:all -encoding UTF-8 "${target[@]}" \
     -cp "$out/stubs" -d "$out/classes" "@$out/src.txt"
 
 echo "== 3/6 running the harness"

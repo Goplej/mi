@@ -1,6 +1,7 @@
 package com.scriptcraft.client;
 
 import com.scriptcraft.ScriptCraft;
+import com.scriptcraft.api.ScriptBindings;
 import com.scriptcraft.core.Reference;
 import com.scriptcraft.core.ServerThreads;
 import com.scriptcraft.engine.ScriptResult;
@@ -216,7 +217,22 @@ public class GuiScriptIde extends GuiScreen {
 
         if (currentFile == null) {
             font.drawString("Open a file from the Files tab first.", MARGIN + 6, contentTop + 4, COLOR_DIM);
+        } else if (editor.getLineCount() == 1 && editor.getLine(0).isEmpty()) {
+            // Not autocomplete, but it answers "what is in scope?" while a file is still empty.
+            font.drawString("Globals: " + join(ScriptBindings.GLOBALS), MARGIN + 6, contentTop + 4, COLOR_DIM);
         }
+    }
+
+    /** Turns a public array into something safe to print in an IDE hint. */
+    private static String join(String[] names) {
+        StringBuilder builder = new StringBuilder();
+        for (String name : names) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(name);
+        }
+        return builder.toString();
     }
 
     private void drawConsole(FontRenderer font) {
@@ -482,6 +498,8 @@ public class GuiScriptIde extends GuiScreen {
             currentFile = name;
             newFileField.setText("");
             status = "Created " + name;
+            // Straight into the editor - a file you just created is a file you want to type in.
+            setTab(Tab.EDITOR);
         } catch (IOException e) {
             status = e.getMessage();
         }

@@ -15,7 +15,10 @@ import javax.script.ScriptEngine;
  */
 public final class ScriptBindings {
 
-    /** Names of every global a script can use. The IDE reads this for its autocomplete list. */
+    /**
+     * Names of every global a script can use. The IDE shows them as a hint on an empty file, and
+     * a future autocomplete reads the same list - adding a global here keeps both in sync.
+     */
     public static final String[] GLOBALS = {
             "player", "world", "server", "blocks", "entities", "events", "timer", "console", "scriptcraft"
     };

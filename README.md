@@ -136,12 +136,14 @@ these docs, and the IDE itself (key presses, clicks, buttons, Ctrl+S, delete con
 server-thread hand-off):
 
 ```bash
-./dev-verify/verify.sh      # PASSED: 210 FAILED: 0
+./dev-verify/verify.sh      # PASSED: 211 FAILED: 0
 ```
 
-It proves compilation under Java 8 with `-Xlint:all` and the behaviour of ScriptCraft's own
-logic. It is not Minecraft and it is not Gradle — in-game behaviour still has to be checked
-with `runClient`. See [dev-verify/README.md](dev-verify/README.md).
+It proves compilation with `-Xlint:all` against the Java 8 API (`javac 8`, or `javac --release 8`
+on a newer JDK) and the behaviour of ScriptCraft's own logic, on the real Nashorn engine. It is
+not Minecraft and it is not Gradle — in-game behaviour still has to be checked with `runClient`.
+If the machine running the script has no JDK at all, `dev-verify/fetch-jdk.sh` downloads one for
+the rig. See [dev-verify/README.md](dev-verify/README.md).
 
 ## Project layout
 

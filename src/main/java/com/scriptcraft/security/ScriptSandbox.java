@@ -76,6 +76,16 @@ public final class ScriptSandbox {
         } catch (ScriptException e) {
             ScriptCraftLog.warn("Could not strip the scripting globals: " + e.getMessage());
         }
+        // With --no-java these do not exist, but if the engine had to be created without that flag
+        // (see createEngine) shadowing them is what keeps Java interop out of the scripts.
+        try {
+            engine.eval(
+                  "var Java = undefined, Packages = undefined, JavaImporter = undefined, "
+                + "java = undefined, javax = undefined, com = undefined, org = undefined, "
+                + "net = undefined, edu = undefined;");
+        } catch (ScriptException e) {
+            ScriptCraftLog.warn("Could not shadow the Java interop globals: " + e.getMessage());
+        }
     }
 
     /** Installs the scoped SecurityManager. Safe to call more than once. */

@@ -13,6 +13,7 @@ import com.scriptcraft.util.ConsoleBuffer;
 import com.scriptcraft.util.TextEditor;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.ICommand;
@@ -572,11 +573,20 @@ public final class Harness {
         ide.click(ide.button(20));
         check("New created the file on disk", new File(ScriptDirectories.scripts(), "ide_ui.js").isFile());
 
+        // --- a fresh, empty file tells the user what is in scope (the list autocomplete will use)
+        FontRenderer.drawnStrings.clear();
+        ide.drawScreen(0, 0, 0f);
+        check("an empty editor lists the API globals",
+                drewText("Globals: player world") && drewText("scriptcraft"));
+
+        // Creating a file switches to the editor, so go back to the Files tab to use the name field.
+        ide.click(ide.button(1));
         ide.clickAt(40, 415, 0);
         type(ide, "noextension");
         ide.click(ide.button(20));
         check("New appends .js", new File(ScriptDirectories.scripts(), "noextension.js").isFile());
 
+        ide.click(ide.button(1));
         ide.clickAt(40, 415, 0);
         type(ide, "../../evil.js");
         ide.click(ide.button(20));
@@ -665,6 +675,16 @@ public final class Harness {
 
         ScriptFileManager.delete("ide_escape.js");
         ScriptFileManager.delete("noextension.js");
+    }
+
+    /** True when the GUI drew a line containing this text in the last drawScreen call. */
+    private static boolean drewText(String needle) {
+        for (String drawn : FontRenderer.drawnStrings) {
+            if (drawn != null && drawn.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The IDE lists exactly what listScripts() returns, in the same order, 11 px per row. */
