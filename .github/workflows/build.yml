@@ -49,6 +49,9 @@ jobs:
         if: steps.build.outcome == 'success'
         run: |
           set -uo pipefail
+          exec > >(tee -a ci-verify.log) 2>&1
+          echo "javap: $(command -v javap)"; javap -version 2>&1 | head -1
+
           jar=build/libs/ScriptCraft-0.1.0.jar
           test -f "$jar" || { echo "no jar at $jar"; exit 1; }
 
@@ -58,6 +61,8 @@ jobs:
               echo "ok       $1"
             else
               echo "FAILED   $1"
+              # Annotations are readable through the API even when the raw log is not.
+              echo "::warning title=Jar check failed::$1"
               failures=$((failures + 1))
             fi
           }
@@ -75,7 +80,10 @@ jobs:
           echo "::notice title=Built jar::$jar - $(stat -c%s "$jar") bytes, $classes classes, sha256 $(sha256sum "$jar" | cut -c1-32)"
 
           if [ "$failures" != 0 ]; then
-            echo "$failures check(s) failed"
+            echo "$failures check(s) failed; dumping javap output"
+            javap -verbose -cp "$jar" com.scriptcraft.ScriptCraft 2>&1 | grep -E 'major version|Mod' | head -5
+            javap -verbose -cp "$jar" com.scriptcraft.client.ClientProxy 2>&1 | tail -20
+            javap -c -p -cp "$jar" com.scriptcraft.api.PlayerApi 2>&1 | grep -oE 'func_[0-9a-z_]+|Method [a-zA-Z_]+' | sort -u | head -10
             exit 1
           fi
           echo 'the jar is a real, reobfuscated Forge 1.12.2 mod jar'
@@ -135,11 +143,11 @@ jobs:
         if: failure() || steps.build.outcome == 'failure'
         run: |
           {
-            echo "=== verify ($GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT) ==="
-            tail -c 20000 ci-verify.log 2>/dev/null
-            echo
-            echo "=== build ==="
-            tail -c 60000 ci-build.log 2>/dev/null
+            echo "=== run $GITHUB_RUN_ID attempt $GITHUB_RUN_ATTEMPT ==="
+            for f in ci-verify.log ci-build.log; do
+              echo "--- $f ---"
+              if [ -f "$f" ]; then tail -c 40000 "$f"; else echo '(missing)'; fi
+            done
           } > ci-last-build.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
