@@ -32,6 +32,28 @@ jobs:
           java -version
           ./gradlew --version
 
+      - name: Probe the Forge maven
+        run: |
+          base=https://maven.minecraftforge.net/net/minecraftforge/forge
+          for v in 1.12.2-14.23.5.2859 1.12.2-14.23.5.2860 1.12.2-14.23.5.2847 1.12.2-14.23.5.2768; do
+            for suffix in -userdev.jar -universal.jar .jar -src.zip; do
+              url="$base/$v/forge-$v$suffix"
+              printf '%s  %s\n' "$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$url" || echo ERR)" "$url"
+            done
+          done
+          echo '--- directory listing of 2859 ---'
+          curl -sS -m 20 "$base/1.12.2-14.23.5.2859/" || true
+          echo '--- newest 1.12.2 versions in maven-metadata.xml ---'
+          curl -sS -m 20 "$base/maven-metadata.xml" | grep -o '<version>1\.12\.2[^<]*</version>' | tail -8 || true
+          echo '--- ForgeGradle snapshot metadata ---'
+          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://maven.minecraftforge.net/net/minecraftforge/gradle/ForgeGradle/2.3-SNAPSHOT/maven-metadata.xml || true
+          echo '--- mappings ---'
+          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_stable/39-1.12/mcp_stable-39-1.12.zip || true
+          echo '--- vanilla client ---'
+          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://libraries.minecraft.net/net/minecraft/client/1.12.2/client-1.12.2.jar || true
+          echo '--- piston ---'
+          curl -sS -o /dev/null -m 20 -w '%{http_code}\n' https://piston-data.mojang.com/mc/game/version_manifest.json || true
+
       - name: Build
         id: build
         continue-on-error: true
