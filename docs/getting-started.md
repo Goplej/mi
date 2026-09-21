@@ -130,7 +130,9 @@ dropped — the tick, the event and the server continue.
 Press `K` (rebindable in Controls → ScriptCraft) to open the IDE.
 
 * **Files** — the script list, plus New, Delete (asks for confirmation), Reload, Close.
-* **Editor** — type, move the cursor, scroll, `Ctrl+S` to save.
+  Creating a file opens the editor on it straight away.
+* **Editor** — type, move the cursor, scroll, `Ctrl+S` to save. An empty file lists the globals
+  in scope (`player`, `world`, `blocks`, …) as a reminder; there is no autocomplete yet.
 * **Console** — the last lines your scripts logged.
 * **Buttons** — Run, Stop, Save, Reload.
 
