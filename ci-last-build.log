@@ -1,4 +1,4 @@
-=== run 35605011906 attempt 1 ===
+=== run 35605250642 attempt 1 ===
 --- ci-verify.log ---
 javap: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8.0.504-1/x64/bin/javap
 1.8.0_504
@@ -11,7 +11,7 @@ ok       links against FML (@Mod)
 FAILED   client proxy is @SideOnly(CLIENT)
 ::warning title=Jar check failed::client proxy is @SideOnly(CLIENT)
 ok       reobfuscated (SRG names present)
-::notice title=Built jar::build/libs/ScriptCraft-0.1.0.jar - 99193 bytes, 55 classes, sha256 5d13ac1a03f1666eef211db957c7e91e
+::notice title=Built jar::build/libs/ScriptCraft-0.1.0.jar - 99193 bytes, 55 classes, sha256 2a099997c69d0ff4323645e877c093a4
 1 check(s) failed; dumping javap output
   major version: 52
     #6 = Utf8               Lnet/minecraftforge/fml/common/Mod;
@@ -117,5 +117,5 @@ Deprecated Gradle features were used in this build, making it incompatible with 
 Use '--warning-mode all' to show the individual deprecation warnings.
 See https://docs.gradle.org/4.10.3/userguide/command_line_interface.html#sec:command_line_warnings
 
-BUILD SUCCESSFUL in 1m 3s
+BUILD SUCCESSFUL in 59s
 24 actionable tasks: 24 executed
