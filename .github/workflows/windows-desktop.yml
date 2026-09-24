@@ -48,9 +48,7 @@ jobs:
           retention-days: 14
 
   publish:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/arena/01a0d3d0-mi')
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -63,5 +61,5 @@ jobs:
       - name: Upload assets to the existing release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || 'v1.0.0' }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: gh release upload "$RELEASE_TAG" release-assets/GarageEmpire-windows-x64.zip release-assets/GarageEmpire-windows-x64.zip.sha256 --repo "$GITHUB_REPOSITORY" --clobber
