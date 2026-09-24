@@ -8,8 +8,10 @@ This is a workshop, restoration and small-empire simulator. One bay, an old car,
 
 ## Play
 
+Requirements: Node.js 22.12 or newer.
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -36,16 +38,20 @@ npm run preview
 
 Шесть слотов в `localStorage`: автосохранение `0` и ручные `1–5`. Версия сохранения проверяется. Битый файл не подменяет текущую игру.
 
-## Desktop
+## Desktop / Windows
 
-`Game/main.cjs` — оболочка Electron поверх `Builds/web`. Сборка Windows, если в среде есть Electron:
+Портативная Windows x64-сборка опубликована в [GitHub Releases](https://github.com/Goplej/mi/releases/tag/v1.0.0): скачайте `GarageEmpire-windows-x64.zip`, распакуйте **всю** папку и запустите `GarageEmpire-win32-x64/GarageEmpire.exe`. Не переносите exe отдельно: рядом с ним нужны остальные файлы приложения. Сборка не подписана сертификатом издателя, поэтому Windows SmartScreen может показать предупреждение.
+
+Собрать локально (Node.js 22.12+):
 
 ```bash
-npm run build
+npm ci
 npm run desktop:pack
 ```
 
-Исполняемый файл ожидается как `Builds/windows/GarageEmpire.exe`, когда упаковщик может скачать Electron. В этой среде сертификат загрузки Electron не прошёл проверку, поэтому exe не собран. Гарантированный выпуск — `Builds/web`.
+Результат: `Builds/windows/GarageEmpire-win32-x64/GarageEmpire.exe`. Скрипт сам обновляет `Builds/web`; для первой упаковки может понадобиться загрузка Electron. Рабочий процесс **Windows desktop** собирает ZIP и SHA-256 checksum на Windows runner. Чтобы загрузить сборку в уже существующий GitHub Release, запустите workflow вручную и укажите его тег, например `v1.0.0`.
+
+`Builds/windows/` не добавляется в Git: готовая сборка доступна в релизе, а не в исходном репозитории.
 
 ## Layout
 
@@ -55,6 +61,7 @@ Source/          simulation, renderer, UI, audio
 Documentation/   how the systems connect
 Tools/verify.ts  headless loop: inspect, buy, install, start, job, save
 Builds/web/      release build
+Builds/windows/  portable Windows x64 app (generated, ignored by Git)
 ```
 
 Проверка симуляции без браузера: `npm run verify`. Проверка типов: `npm run typecheck`.
